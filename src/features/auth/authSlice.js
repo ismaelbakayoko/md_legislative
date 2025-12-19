@@ -3,13 +3,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 // Simulation d'une API de login
 const loginAPI = async (credentials) => {
     await new Promise(resolve => setTimeout(resolve, 800)); // Latence réseau fictive
-    if (credentials.email === 'admin@interieur.gouv.fr' && credentials.password === 'admin123') {
+    if (credentials.email === 'admin@gmail.com' && credentials.password === 'admin123') {
         return {
             token: 'fake-jwt-token-123456',
             user: {
                 id: 1,
                 name: 'Administrateur',
-                email: 'admin@interieur.gouv.fr',
+                email: 'admin@gmail.com',
                 role: 'ADMIN'
             }
         };

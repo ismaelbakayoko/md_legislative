@@ -61,7 +61,7 @@ const Login = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                                    placeholder="nom@interieur.gouv.fr"
+                                    placeholder="admin@gmail.com"
                                 />
                             </div>
                         </div>
@@ -136,7 +136,7 @@ const Login = () => {
                             L'accès à cette application est strictement réservé aux personnels autorisés. Toute tentative d'accès frauduleux est passible de poursuites.
                         </div>
                         <div className="mt-4 text-center text-xs text-gray-400">
-                            Identifiants démo : admin@interieur.gouv.fr / admin123
+                            Identifiants démo : admin@gmail.com / admin123
                         </div>
                     </div>
                 </div>
