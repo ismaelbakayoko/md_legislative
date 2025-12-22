@@ -31,16 +31,16 @@ export const MOCK_DATA = {
             blancs: 10000,
             nuls: 5000,
             candidats: [
-                { id: 'c1', nom: 'Dupont', prenom: 'Jean', parti: 'ENS', voix: 15400, circonscription: 1 },
-                { id: 'c2', nom: 'Martin', prenom: 'Sophie', parti: 'NFP', voix: 18200, circonscription: 1 },
-                { id: 'c3', nom: 'Leclerc', prenom: 'Pierre', parti: 'RN', voix: 6500, circonscription: 1 },
-                { id: 'c4', nom: 'Bernard', prenom: 'Marie', parti: 'LR', voix: 4200, circonscription: 1 },
-                { id: 'c5', nom: 'Petit', prenom: 'Lucas', parti: 'ECO', voix: 2100, circonscription: 1 },
-                { id: 'c6', nom: 'Robert', prenom: 'Julie', parti: 'REC', voix: 900, circonscription: 1 },
-                { id: 'c7', nom: 'Durand', prenom: 'Thomas', parti: 'DIV', voix: 300, circonscription: 1 },
-                { id: 'c8', nom: 'Moreau', prenom: 'Emma', parti: 'ENS', voix: 14800, circonscription: 2 },
-                { id: 'c9', nom: 'Laurent', prenom: 'David', parti: 'NFP', voix: 19500, circonscription: 2 },
-                { id: 'c10', nom: 'Simon', prenom: 'Céa', parti: 'RN', voix: 5800, circonscription: 2 },
+                { id: 'c1', nom: 'Dupont', prenom: 'Jean', parti: 'ENS', voix: 15400, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/men/32.jpg' },
+                { id: 'c2', nom: 'Martin', prenom: 'Sophie', parti: 'NFP', voix: 18200, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/women/44.jpg' },
+                { id: 'c3', nom: 'Leclerc', prenom: 'Pierre', parti: 'RN', voix: 6500, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/men/12.jpg' },
+                { id: 'c4', nom: 'Bernard', prenom: 'Marie', parti: 'LR', voix: 4200, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/women/68.jpg' },
+                { id: 'c5', nom: 'Petit', prenom: 'Lucas', parti: 'ECO', voix: 2100, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/men/22.jpg' },
+                { id: 'c6', nom: 'Robert', prenom: 'Julie', parti: 'REC', voix: 900, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/women/29.jpg' },
+                { id: 'c7', nom: 'Durand', prenom: 'Thomas', parti: 'DIV', voix: 300, circonscription: 1, photoUrl: 'https://randomuser.me/api/portraits/men/5.jpg' },
+                { id: 'c8', nom: 'Moreau', prenom: 'Emma', parti: 'ENS', voix: 14800, circonscription: 2, photoUrl: 'https://randomuser.me/api/portraits/women/33.jpg' },
+                { id: 'c9', nom: 'Laurent', prenom: 'David', parti: 'NFP', voix: 19500, circonscription: 2, photoUrl: 'https://randomuser.me/api/portraits/men/55.jpg' },
+                { id: 'c10', nom: 'Simon', prenom: 'Céa', parti: 'RN', voix: 5800, circonscription: 2, photoUrl: 'https://randomuser.me/api/portraits/women/15.jpg' },
             ]
         }
     },
@@ -55,6 +55,7 @@ export const MOCK_DATA = {
             voix: 18200,
             pourcentage: 38.5,
             position: 1,
+            photoUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
             totalVotants: 47300,
             bureaux: [
                 { nom: 'Bureau 1 - Mairie', voix: 450, pourcentage: 42.1 },
@@ -73,6 +74,7 @@ export const MOCK_DATA = {
             voix: 15400,
             pourcentage: 32.6,
             position: 2,
+            photoUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
             totalVotants: 47300,
             bureaux: [
                 { nom: 'Bureau 1 - Mairie', voix: 320, pourcentage: 29.9 },

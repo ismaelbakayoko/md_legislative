@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchResultatsDepartementAPI, fetchResultatsCandidatAPI } from './resultatsAPI';
+import { addGlobalResultsAPI } from '../results/resultsAPI';
 
 export const fetchResultatsByDepartement = createAsyncThunk(
     'resultats/fetchByDepartement',
@@ -25,6 +26,18 @@ export const fetchResultatsByCandidat = createAsyncThunk(
     }
 );
 
+export const addGlobalResults = createAsyncThunk(
+    'resultats/addGlobal',
+    async (data, { rejectWithValue }) => {
+        try {
+            const response = await addGlobalResultsAPI(data);
+            return response;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
 const resultatsSlice = createSlice({
     name: 'resultats',
     initialState: {
@@ -32,12 +45,16 @@ const resultatsSlice = createSlice({
         currentCandidat: null,
         loading: false,
         error: null,
+        addSuccess: false // Track success state
     },
     reducers: {
         clearCurrentResultats: (state) => {
             state.currentDepartement = null;
             state.currentCandidat = null;
             state.error = null;
+        },
+        resetAddSuccess: (state) => {
+            state.addSuccess = false;
         }
     },
     extraReducers: (builder) => {
@@ -67,9 +84,24 @@ const resultatsSlice = createSlice({
             .addCase(fetchResultatsByCandidat.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+            // Add Global Results
+            .addCase(addGlobalResults.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.addSuccess = false;
+            })
+            .addCase(addGlobalResults.fulfilled, (state) => {
+                state.loading = false;
+                state.addSuccess = true;
+            })
+            .addCase(addGlobalResults.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                state.addSuccess = false;
             });
     },
 });
 
-export const { clearCurrentResultats } = resultatsSlice.actions;
+export const { clearCurrentResultats, resetAddSuccess } = resultatsSlice.actions;
 export default resultatsSlice.reducer;

@@ -25,7 +25,14 @@ const CandidatDetail = () => {
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                    <div className="flex-shrink-0 h-24 w-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-md">
+                        <img
+                            src={candidat.photoUrl || `https://ui-avatars.com/api/?name=${candidat.prenom}+${candidat.nom}&background=random`}
+                            alt={`${candidat.prenom} ${candidat.nom}`}
+                            className="h-full w-full object-cover"
+                        />
+                    </div>
                     <div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
                             {candidat.prenom} {candidat.nom}
@@ -39,7 +46,7 @@ const CandidatDetail = () => {
                             </span>
                         </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex-grow text-right">
                         <div className="text-4xl font-bold text-gray-900">{candidat.pourcentage}%</div>
                         <div className="text-gray-500">des exprimés</div>
                     </div>

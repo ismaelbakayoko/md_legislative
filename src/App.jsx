@@ -3,10 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from './features/auth/authSlice';
 import Header from './components/Header';
-import Home from './pages/Home';
 import ResultatsDepartement from './pages/ResultatsDepartement';
 import CandidatDetail from './pages/CandidatDetail';
 import Login from './pages/Login';
+import Register from './pages/Register';
+import LieuxVote from './pages/LieuxVote';
 
 const MobileWarning = () => (
   <div className="fixed inset-0 bg-brand-900 z-50 flex flex-col justify-center items-center p-8 text-center text-white">
@@ -46,7 +47,7 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 1024);
+      setIsMobile(window.innerWidth < 700);
     };
 
     window.addEventListener('resize', handleResize);
@@ -62,16 +63,23 @@ function App() {
       <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           <Route path="/" element={
             <ProtectedRoute>
-              <Home />
+              <ResultatsDepartement />
             </ProtectedRoute>
           } />
 
           <Route path="/departement/:id" element={
             <ProtectedRoute>
               <ResultatsDepartement />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/departement/:id/lieux-vote" element={
+            <ProtectedRoute>
+              <LieuxVote />
             </ProtectedRoute>
           } />
 

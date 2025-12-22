@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { fetchResultatsByDepartement } from '../features/resultats/resultatsSlice';
+import { fetchDepartements } from '../features/departements/departementsSlice';
 import { selectSortedCandidats, selectDepartementStats, selectResultatsLoading } from '../features/resultats/selectors';
 import Loader from '../components/Loader';
 import StatCard from '../components/StatCard';
@@ -16,25 +17,40 @@ const ResultatsDepartement = () => {
     const sortedCandidats = useSelector(selectSortedCandidats);
     const stats = useSelector(selectDepartementStats);
     const currentDepartement = useSelector((state) => state.resultats.currentDepartement);
+    const departementsList = useSelector((state) => state.departements.list);
+    const selectedDepartement = useSelector((state) => state.settings.selectedDepartement);
+
+    const effectiveId = id || selectedDepartement?.id_departement;
 
     useEffect(() => {
-        if (id) {
-            dispatch(fetchResultatsByDepartement(id));
+        if (effectiveId) {
+            dispatch(fetchResultatsByDepartement(effectiveId));
+            if (departementsList.length === 0) {
+                dispatch(fetchDepartements());
+            }
         }
-    }, [dispatch, id]);
+    }, [dispatch, effectiveId, departementsList.length]);
 
     if (loading) return <Loader />;
-    if (!currentDepartement) return <div className="text-center p-8 text-gray-500">Aucun résultat disponible.</div>;
+    if (!selectedDepartement) return <div className="text-center p-8 text-gray-500">Aucun résultat disponible.</div>;
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">
-                    Résultats : {currentDepartement.nom} ({id})
-                </h2>
-                <div className="text-sm text-gray-500 mt-1">
-                    Dernière mise à jour : {new Date().toLocaleDateString()}
+            <div className="mb-8 flex justify-between items-start">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                        Résultats : {selectedDepartement?.nom_departement}
+                    </h2>
+                    <div className="text-sm text-gray-500 mt-1">
+                        Dernière mise à jour : {new Date().toLocaleDateString()}
+                    </div>
                 </div>
+                <Link
+                    to={`/departement/${effectiveId}/lieux-vote`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                >
+                    Voir les Lieux de Vote
+                </Link>
             </div>
 
             {/* Global Stats */}

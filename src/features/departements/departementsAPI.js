@@ -1,7 +1,21 @@
-import { MOCK_DATA } from '../../services/mockData';
+import api from '../../services/api';
 
 export const fetchDepartementsAPI = async () => {
-    // Simulation délai réseau
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return MOCK_DATA.departements;
+    const response = await api.post('/importations/liste-departements');
+    if (response.data && response.data.success) {
+        return response.data.departements.map(dep => ({
+            code: dep.id_departement,
+            nom: dep.nom_departement,
+            ...dep
+        }));
+    }
+    return [];
+};
+
+export const fetchLieuxVoteAPI = async (nomDepartement) => {
+    const response = await api.post('/importations/lv-bv-dun-departement', { nom_departement: nomDepartement });
+    if (response.data && response.data.success) {
+        return response.data;
+    }
+    return { dataMap: [] };
 };
