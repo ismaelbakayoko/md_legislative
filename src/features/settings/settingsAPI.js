@@ -27,9 +27,10 @@ export const fetchCirconscriptionsByRegionAPI = async (idRegion) => {
 
 };
 
-export const fechelectionsAPI = async () => {
+export const fetchElectionsAPI = async () => {
     const response = await api.post('/importations/liste-elections');
     if (response.data && response.data.success) {
+        console.log("elections : ", response.data.elections);
         return response.data.elections || response.data.data || [];
     }
     return [];

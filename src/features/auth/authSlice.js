@@ -66,7 +66,11 @@ const authSlice = createSlice({
             state.user = null;
             state.token = null;
             state.isAuthenticated = false;
+            // Clear all relevant localStorage items
             localStorage.removeItem('token');
+            localStorage.removeItem('selectedRegion');
+            localStorage.removeItem('selectedDepartement');
+            localStorage.removeItem('selectedCirconscription');
         },
     },
     extraReducers: (builder) => {
@@ -80,7 +84,9 @@ const authSlice = createSlice({
                 state.loading = false;
                 state.isAuthenticated = true;
                 // API response: { success: true, contact_user, token }
-                state.user = { contact: action.payload.contact_user };
+                console.log('Login payload:', action.payload);
+                // Store the user data - adjust based on actual API response
+                state.user = action.payload.contact_user || action.payload.user || action.payload;
                 state.token = action.payload.token;
                 localStorage.setItem('token', action.payload.token);
             })

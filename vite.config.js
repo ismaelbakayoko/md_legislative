@@ -10,7 +10,8 @@ export default defineConfig({
     open: true,
     allowedHosts: [
       'testlegislatives.nport.link',
-      'e784c83fc800.ngrok-free.app',
+      'a09f2433d28f.ngrok-free.app',
+      "dbdffd3fda1d4a5c-160-154-130-240.serveousercontent.com",
     ],
   },
   build: {

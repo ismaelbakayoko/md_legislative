@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchRegionsAPI, fetchDepartementsByRegionAPI, fetchCirconscriptionsByRegionAPI } from './settingsAPI';
+import { fetchRegionsAPI, fetchDepartementsByRegionAPI, fetchCirconscriptionsByRegionAPI, fetchElectionsAPI } from './settingsAPI';
 
 // Thunks
 export const fetchRegions = createAsyncThunk(
@@ -70,7 +70,31 @@ const settingsSlice = createSlice({
         },
         error: null
     },
-    // ... reducers ...
+    reducers: {
+        setSelectedRegion: (state, action) => {
+            state.selectedRegion = action.payload;
+            localStorage.setItem('selectedRegion', JSON.stringify(action.payload));
+            // Reset dependents
+            state.selectedDepartement = null;
+            state.selectedCirconscription = null;
+            state.departements = [];
+            state.circonscriptions = [];
+            localStorage.removeItem('selectedDepartement');
+            localStorage.removeItem('selectedCirconscription');
+        },
+        setSelectedDepartement: (state, action) => {
+            state.selectedDepartement = action.payload;
+            localStorage.setItem('selectedDepartement', JSON.stringify(action.payload));
+            // Reset dependent
+            state.selectedCirconscription = null;
+            // Removed clearing of circonscriptions intentionally to fix previous bug
+            localStorage.removeItem('selectedCirconscription');
+        },
+        setSelectedCirconscription: (state, action) => {
+            state.selectedCirconscription = action.payload;
+            localStorage.setItem('selectedCirconscription', JSON.stringify(action.payload));
+        }
+    },
     extraReducers: (builder) => {
         builder
             // Elections

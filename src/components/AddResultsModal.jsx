@@ -7,6 +7,8 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
     const dispatch = useDispatch();
     const user = useSelector(selectAuthUser);
     const { loading, error, addSuccess } = useSelector((state) => state.resultats);
+    const { elections, selectedCirconscription } = useSelector((state) => state.settings);
+    
 
     const [formData, setFormData] = useState({
         pop_elect: '',
@@ -16,14 +18,22 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
         bulletins_blancs: '',
         bulletins_exprimes: ''
     });
+    const [pdfFile, setPdfFile] = useState(null);
 
     useEffect(() => {
         if (addSuccess) {
             onClose();
             dispatch(resetAddSuccess());
-            // Optionally refresh polling station list if needed, 
-            // but the parent handles displaying updated status (though data needs refetch)
-            // For now just close.
+            // Reset form
+            setFormData({
+                pop_elect: '',
+                pers_astreint: '',
+                nbre_votants: '',
+                bulletins_nuls: '',
+                bulletins_blancs: '',
+                bulletins_exprimes: ''
+            });
+            setPdfFile(null);
         }
     }, [addSuccess, onClose, dispatch]);
 
@@ -32,15 +42,37 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file && file.type === 'application/pdf') {
+            setPdfFile(file);
+        } else if (file) {
+            alert('Veuillez sélectionner un fichier PDF');
+            e.target.value = '';
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+
+           // Get current election
+        const currentElection = elections && elections.length > 0 ? elections[0] : null;
+
+        if (!currentElection || !selectedCirconscription) {
+            console.error('Missing election or circonscription data');
+            return;
+        }
 
         const payload = {
             ...formData,
             id_bv: bureauData?.id_bv,
-            saisie_par: user?.id, // Assuming user object has id
-            // Should add validation here if needed
+            saisie_par: user?.contact_user,
+            id_cir : selectedCirconscription?.id_cir,
+            id_election: currentElection?.id_election,
+            nb_tour: 1,
+            pv_pdf: pdfFile // Include the PDF file
         };
+        console.log('payload', payload);
 
         dispatch(addGlobalResults(payload));
     };
@@ -131,6 +163,26 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
                                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                                         />
                                     </div>
+                                </div>
+
+                                {/* PDF Upload */}
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        PV (PDF) <span className="text-gray-500 text-xs">(optionnel)</span>
+                                    </label>
+                                    <div className="mt-1 flex items-center">
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handleFileChange}
+                                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
+                                        />
+                                    </div>
+                                    {pdfFile && (
+                                        <p className="mt-2 text-sm text-gray-600">
+                                            Fichier sélectionné: {pdfFile.name}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">

@@ -8,6 +8,8 @@ import CandidatDetail from './pages/CandidatDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import LieuxVote from './pages/LieuxVote';
+import ResultatsParLieu from './pages/ResultatsParLieu';
+import ResultatsLocalite from './pages/ResultatsLocalite';
 
 const MobileWarning = () => (
   <div className="fixed inset-0 bg-brand-900 z-50 flex flex-col justify-center items-center p-8 text-center text-white">
@@ -86,6 +88,18 @@ function App() {
           <Route path="/candidat/:id" element={
             <ProtectedRoute>
               <CandidatDetail />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/resultats-par-lieu" element={
+            <ProtectedRoute>
+              <ResultatsParLieu />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/resultats-localite" element={
+            <ProtectedRoute>
+              <ResultatsLocalite />
             </ProtectedRoute>
           } />
         </Routes>
