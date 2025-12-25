@@ -106,21 +106,21 @@ const SettingsModal = ({ isOpen, onClose, forced = false }) => {
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
                 {/* Modal Container */}
-                <div className="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
+                <div className="relative inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border border-gray-100" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
 
                     {/* Header with gradient pattern */}
-                    <div className="bg-gradient-to-br from-brand-600 to-brand-800 px-6 py-8 relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-brand-600 to-brand-800 px-5 py-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-brand-400/20 rounded-full -ml-12 -mb-12 blur-xl"></div>
 
                         <div className="relative z-10 text-center">
-                            <div className="mx-auto w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-white/30">
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="mx-auto w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-3 shadow-inner border border-white/30">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </div>
-                            <h3 className="text-2xl font-black text-white tracking-tight" id="modal-headline">
+                            <h3 className="text-xl font-black text-white tracking-tight" id="modal-headline">
                                 {forced ? 'Configuration Requise' : 'Configuration'}
                             </h3>
                             <p className="text-brand-100 text-sm mt-1 font-medium px-4">
@@ -131,7 +131,7 @@ const SettingsModal = ({ isOpen, onClose, forced = false }) => {
                         </div>
                     </div>
 
-                    <div className="px-6 py-8 space-y-6">
+                    <div className="px-5 py-6 space-y-4">
                         {/* Region */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
@@ -153,7 +153,7 @@ const SettingsModal = ({ isOpen, onClose, forced = false }) => {
                                 <select
                                     id="region"
                                     name="region"
-                                    className="block w-full pl-4 pr-10 py-3.5 text-sm font-bold bg-gray-50 border-2 border-gray-100 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all duration-300 group-hover:border-gray-200"
+                                    className="block w-full pl-4 pr-10 py-2.5 text-sm font-bold bg-gray-50 border-2 border-gray-100 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all duration-300 group-hover:border-gray-200"
                                     value={localRegion?.id_region || ''}
                                     onChange={handleRegionChange}
                                 >
@@ -182,7 +182,7 @@ const SettingsModal = ({ isOpen, onClose, forced = false }) => {
                                 <select
                                     id="departement"
                                     name="departement"
-                                    className="block w-full pl-4 pr-10 py-3.5 text-sm font-bold bg-gray-50 border-2 border-gray-100 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all duration-300 group-hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="block w-full pl-4 pr-10 py-2.5 text-sm font-bold bg-gray-50 border-2 border-gray-100 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all duration-300 group-hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     value={localDepartement?.id_departement || ''}
                                     onChange={handleDepartementChange}
                                     disabled={!localRegion || loading.departements}
@@ -218,7 +218,7 @@ const SettingsModal = ({ isOpen, onClose, forced = false }) => {
                                 <select
                                     id="circonscription"
                                     name="circonscription"
-                                    className="block w-full pl-4 pr-10 py-3.5 text-sm font-bold bg-gray-50 border-2 border-gray-100 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all duration-300 group-hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="block w-full pl-4 pr-10 py-2.5 text-sm font-bold bg-gray-50 border-2 border-gray-100 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all duration-300 group-hover:border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     value={localCirconscription?.id_cir || ''}
                                     onChange={handleCirconscriptionChange}
                                     disabled={!localRegion || loading.circonscriptions}
@@ -247,13 +247,13 @@ const SettingsModal = ({ isOpen, onClose, forced = false }) => {
                     </div>
 
                     {/* Footer with actions */}
-                    <div className="bg-gray-50/80 backdrop-blur-md px-6 py-6 flex flex-col items-center">
+                    <div className="bg-gray-50/80 backdrop-blur-md px-5 py-5 flex flex-col items-center">
                         <button
                             type="button"
                             disabled={forced && !isComplete}
-                            className={`w-full py-4 px-6 rounded-2xl text-base font-black tracking-tight shadow-xl transition-all duration-300 transform active:scale-95 flex items-center justify-center gap-2 ${forced && !isComplete
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-brand-600 text-white hover:bg-brand-700 hover:shadow-brand-500/20 active:bg-brand-800'
+                            className={`w-full py-3 px-6 rounded-2xl text-base font-black tracking-tight shadow-xl transition-all duration-300 transform active:scale-95 flex items-center justify-center gap-2 ${forced && !isComplete
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-brand-600 text-white hover:bg-brand-700 hover:shadow-brand-500/20 active:bg-brand-800'
                                 }`}
                             onClick={handleSave}
                         >
