@@ -154,12 +154,17 @@ const ResultatsParLieu = () => {
 
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                    <h1 className="text-4xl font-black text-gray-900 tracking-tightest">
                         Détails des Résultats
                     </h1>
-                    <p className="text-gray-500 mt-1 font-medium">
-                        Circonscription : <span className="text-brand-600 font-bold">{selectedCirconscription?.code_cir}-{selectedCirconscription?.circonscription}</span>
-                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-brand-50 text-brand-700 border border-brand-100 uppercase tracking-wider">
+                            Circonscription
+                        </span>
+                        <p className="text-gray-600 font-bold text-sm">
+                            {selectedCirconscription?.code_cir} — <span className="text-gray-900">{selectedCirconscription?.circonscription}</span>
+                        </p>
+                    </div>
                 </div>
 
                 {/* Tab Switcher */}
@@ -203,25 +208,25 @@ const ResultatsParLieu = () => {
                     <div className="overflow-x-auto">
                         {activeTab === 'bv' && (
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50/50">
+                                <thead className="bg-gray-50/80 border-b border-gray-200">
                                     <tr>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_local')}>
-                                            <div className="flex items-center gap-1">Localité <ChevronUpIcon className={`w-3 h-3 ${sortConfig.key === 'nom_local' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
+                                        <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_local')}>
+                                            <div className="flex items-center gap-1.5">Localité <ChevronUpIcon className={`w-3.5 h-3.5 ${sortConfig.key === 'nom_local' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
                                         </th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_lieu')}>
-                                            <div className="flex items-center gap-1">Lieu de Vote <ChevronUpIcon className={`w-3 h-3 ${sortConfig.key === 'nom_lieu' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
+                                        <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_lieu')}>
+                                            <div className="flex items-center gap-1.5">Lieu de Vote <ChevronUpIcon className={`w-3.5 h-3.5 ${sortConfig.key === 'nom_lieu' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
                                         </th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Bureaux</th>
-                                        <th scope="col" className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Bureaux</th>
+                                        <th scope="col" className="px-6 py-5 text-right text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
                                     {sortedData.map((item, index) => (
-                                        <tr key={`${item.id_lieu}-${index}`} className="hover:bg-brand-50/30 transition-all duration-200 group">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.nom_local}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{item.nom_lieu}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-50 text-brand-700 border border-brand-100 shadow-sm">{item.nb_bureaux} BV</span>
+                                        <tr key={`${item.id_lieu}-${index}`} className="hover:bg-brand-50/40 transition-all duration-200 group border-b border-gray-100 last:border-0">
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.nom_local}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700 font-bold">{item.nom_lieu}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-center">
+                                                <span className="px-4 py-1.5 rounded-xl text-xs font-black bg-brand-50 text-brand-700 border border-brand-100 shadow-sm leading-none tabular-nums">{item.nb_bureaux} BV</span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <div className="flex items-center justify-end gap-3">
@@ -229,8 +234,11 @@ const ResultatsParLieu = () => {
                                                     {(() => {
                                                         const bureau = item.data.bureaux_vote && item.data.bureaux_vote[0];
                                                         const pvPdf = bureau?.resultats_groupes && bureau.resultats_groupes[0]?.pv_pdf;
-                                                        const pdfUrl = Array.isArray(pvPdf) ? pvPdf[0] : pvPdf;
-                                                        return pvPdf ? (
+                                                        const pdfUrl = Array.isArray(pvPdf)
+                                                            ? (typeof pvPdf[0] === 'string' ? pvPdf[0] : pvPdf[0]?.url)
+                                                            : (typeof pvPdf === 'string' ? pvPdf : pvPdf?.url);
+
+                                                        return pvPdf && pdfUrl ? (
                                                             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all shadow-sm border border-emerald-100 group-hover:scale-105" title="Voir PV">
                                                                 <BuildingOfficeIcon className="w-4 h-4" />
                                                             </a>
@@ -246,22 +254,22 @@ const ResultatsParLieu = () => {
 
                         {activeTab === 'localite' && (
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50/50">
+                                <thead className="bg-gray-50/80 border-b border-gray-200">
                                     <tr>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Localité</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Pop. Élect.</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Votants</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Participation</th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Premier Candidat</th>
-                                        <th scope="col" className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Localité</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Pop. Élect.</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Votants</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Participation</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Tête de Liste</th>
+                                        <th scope="col" className="px-6 py-5 text-right text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
                                     {resultats_locales.map((item, index) => (
-                                        <tr key={item.resultats_generaux.id_local || index} className="hover:bg-blue-50/30 transition-all duration-200">
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-gray-900">{item.resultats_generaux.nom_local}</td>
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-medium text-gray-600">{item.resultats_generaux.pop_elect.toLocaleString()}</td>
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-medium text-gray-600">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
+                                        <tr key={item.resultats_generaux.id_local || index} className="hover:bg-brand-50/40 transition-all duration-200 border-b border-gray-100 last:border-0 opacity-0 animate-fade-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' }}>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.resultats_generaux.nom_local}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-black text-gray-800 tabular-nums">{item.resultats_generaux.pop_elect.toLocaleString()}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-black text-brand-600 tabular-nums">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-center">
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-sm font-black text-brand-600">{item.resultats_generaux.taux_participation}%</span>
@@ -300,23 +308,23 @@ const ResultatsParLieu = () => {
 
                         {activeTab === 'centre' && (
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50/50">
+                                <thead className="bg-gray-50/80 border-b border-gray-200">
                                     <tr>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Centre de Vote</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Votants</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Participation</th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest"> Gagnant</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">PDF PV</th>
-                                        <th scope="col" className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Centre de Vote</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Votants</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Participation</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]"> Gagnant</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">PDF PV</th>
+                                        <th scope="col" className="px-6 py-5 text-right text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
                                     {resultats_centre.map((item, index) => (
-                                        <tr key={item.resultats_generaux.id_lieu || index} className="hover:bg-purple-50/30 transition-all duration-200">
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-gray-900">{item.resultats_generaux.nom_lieu}</td>
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-medium text-gray-600">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
+                                        <tr key={item.resultats_generaux.id_lieu || index} className="hover:bg-brand-50/40 transition-all duration-200 border-b border-gray-100 last:border-0 opacity-0 animate-fade-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' }}>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.resultats_generaux.nom_lieu}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-black text-gray-800 tabular-nums">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-center">
-                                                <span className="text-sm font-black text-purple-600">{item.resultats_generaux.taux_participation}%</span>
+                                                <span className="text-sm font-black text-brand-600 tabular-nums">{item.resultats_generaux.taux_participation}%</span>
                                             </td>
                                             <td className="px-6 py-5 whitespace-nowrap">
                                                 {item.resultats_partis && item.resultats_partis[0] ? (

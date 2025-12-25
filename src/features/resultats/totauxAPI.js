@@ -40,3 +40,15 @@ export const fetchResultatsLocalesCentresAPI = async (data) => {
     }
     throw new Error(response.data?.message || "Erreur lors de la récupération des résultats par localité/centre");
 };
+export const uploadPvAPI = async (formData) => {
+    console.log("API Request - uploadPvAPI");
+    const response = await api.post('resultats/uploader-pv-resultats-groupes', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+    if (response.data && response.data.success) {
+        return response.data;
+    }
+    throw new Error(response.data?.message || "Erreur lors de l'upload du PV");
+};

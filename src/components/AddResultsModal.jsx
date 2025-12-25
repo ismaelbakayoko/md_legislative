@@ -19,7 +19,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
         bulletins_blancs: '',
         bulletins_exprimes: ''
     });
-    const [pdfFile, setPdfFile] = useState(null);
+    const [pdfFiles, setPdfFiles] = useState([]);
 
     // Mettre à jour le formulaire quand bureauData change
     useEffect(() => {
@@ -36,6 +36,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
                 bulletins_blancs: '',
                 bulletins_exprimes: ''
             });
+            setPdfFiles([]);
         }
     }, [isOpen, bureauData]);
 
@@ -63,7 +64,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
                 bulletins_blancs: '',
                 bulletins_exprimes: ''
             });
-            setPdfFile(null);
+            setPdfFiles([]);
         }
         if (error) {
             toast.error(`Erreur : ${error}`);
@@ -88,12 +89,18 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
     };
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file && file.type === 'application/pdf') {
-            setPdfFile(file);
-        } else if (file) {
-            toast.error('Veuillez sélectionner un fichier PDF');
-            e.target.value = '';
+        const selectedFiles = Array.from(e.target.files);
+        const validPdfs = selectedFiles.filter(file => file.type === 'application/pdf');
+
+        if (validPdfs.length !== selectedFiles.length) {
+            toast.error('Certains fichiers ont été ignorés car ils ne sont pas au format PDF');
+        }
+
+        if (validPdfs.length > 10) {
+            toast.error('Vous ne pouvez pas sélectionner plus de 10 fichiers');
+            setPdfFiles(validPdfs.slice(0, 10));
+        } else {
+            setPdfFiles(validPdfs);
         }
     };
 
@@ -115,7 +122,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
             id_cir: selectedCirconscription?.id_cir,
             id_election: currentElection?.id_election,
             nb_tour: 1,
-            pv_pdf: pdfFile // Include the PDF file
+            pv_pdf: pdfFiles // Include the PDF files array
         };
         console.log('payload', payload);
 
@@ -204,20 +211,30 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
                                 {/* PDF Upload */}
                                 <div className="mt-4">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        PV (PDF) <span className="text-gray-500 text-xs">(optionnel)</span>
+                                        PV (PDF) <span className="text-gray-500 text-xs">(optionnel, max 10)</span>
                                     </label>
                                     <div className="mt-1 flex items-center">
                                         <input
                                             type="file"
                                             accept=".pdf"
+                                            multiple
                                             onChange={handleFileChange}
                                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
                                         />
                                     </div>
-                                    {pdfFile && (
-                                        <p className="mt-2 text-sm text-gray-600">
-                                            Fichier sélectionné: {pdfFile.name}
-                                        </p>
+                                    {pdfFiles.length > 0 && (
+                                        <div className="mt-2 space-y-1">
+                                            <p className="text-sm font-medium text-gray-600">
+                                                {pdfFiles.length} fichier(s) sélectionné(s) :
+                                            </p>
+                                            <div className="max-h-24 overflow-y-auto flex flex-wrap gap-1">
+                                                {pdfFiles.map((f, i) => (
+                                                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 truncate max-w-[150px]">
+                                                        {f.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
 

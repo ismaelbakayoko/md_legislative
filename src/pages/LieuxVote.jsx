@@ -6,6 +6,7 @@ import { listResultatsGroupes } from '../features/resultats/resultatsSlice';
 import AddResultsModal from '../components/AddResultsModal';
 import AddDetailedResultsModal from '../components/AddDetailedResultsModal';
 import BvResultsModal from '../components/BvResultsModal';
+import UploadPvModal from '../components/UploadPvModal';
 
 const LieuxVote = () => {
     const { id } = useParams();
@@ -77,6 +78,16 @@ const LieuxVote = () => {
             <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-start gap-2">
 
                 <div className="flex flex-col sm:flex-row gap-3">
+                    <Link
+                        to={`/departement/${id}`}
+                        className="inline-flex items-center px-5 py-2.5 border border-gray-200 text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none active:scale-95 group"
+                    >
+                        <svg className="w-4 h-4 mr-2 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Retour
+                    </Link>
+
                     <div className="relative w-full max-w-md">
                         <input
                             type="text"
@@ -104,15 +115,7 @@ const LieuxVote = () => {
                         Rafraîchir
                     </button>
 
-                    <Link
-                        to={`/departement/${id}`}
-                        className="inline-flex items-center px-5 py-2.5 border border-gray-200 text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none active:scale-95 group"
-                    >
-                        <svg className="w-4 h-4 mr-2 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Retour
-                    </Link>
+
                 </div>
             </div>
 
@@ -178,6 +181,15 @@ const LieuxVote = () => {
                                                                         </svg>
                                                                         Résultats Détaillés
                                                                     </button>
+                                                                    <button
+                                                                        onClick={() => handleOpenModal(bv, 'upload_pv')}
+                                                                        className="w-full inline-flex items-center justify-center px-3 py-2 border border-emerald-600 text-xs font-medium rounded-md text-emerald-600 bg-white hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                                                                    >
+                                                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                                        </svg>
+                                                                        Uploader PV
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         ))
@@ -213,6 +225,13 @@ const LieuxVote = () => {
                     isOpen={isModalOpen}
                     onClose={handleCloseModal}
                     bureauData={selectedBV}
+                />
+            ) : modalType === 'upload_pv' ? (
+                <UploadPvModal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    bureauData={selectedBV}
+                    onSuccess={handleRefresh}
                 />
             ) : (
                 <BvResultsModal

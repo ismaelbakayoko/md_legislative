@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchResultatsDepartementAPI, fetchResultatsCandidatAPI } from './resultatsAPI';
 import { addGlobalResultsAPI, addDetailedResultsAPI } from '../results/resultsAPI';
-import { fetchTotauxCirconscriptionAPI, listResultatsGroupesAPI, fetchLieuxVoteByDepartementAPI, fetchResultatsLocalesCentresAPI } from './totauxAPI';
+import { fetchTotauxCirconscriptionAPI, listResultatsGroupesAPI, fetchLieuxVoteByDepartementAPI, fetchResultatsLocalesCentresAPI, uploadPvAPI } from './totauxAPI';
 
 export const fetchResultatsByDepartement = createAsyncThunk(
     'resultats/fetchByDepartement',
@@ -84,6 +84,18 @@ export const fetchResultatsLocalesCentres = createAsyncThunk(
     async (data, { rejectWithValue }) => {
         try {
             const response = await fetchResultatsLocalesCentresAPI(data);
+            return response;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const uploadPv = createAsyncThunk(
+    'resultats/uploadPv',
+    async (formData, { rejectWithValue }) => {
+        try {
+            const response = await uploadPvAPI(formData);
             return response;
         } catch (error) {
             return rejectWithValue(error.message);
@@ -344,6 +356,21 @@ const resultatsSlice = createSlice({
             .addCase(fetchResultatsLocalesCentres.rejected, (state, action) => {
                 state.loadingLocalesCentres = false;
                 state.error = action.payload;
+            })
+            // Upload PV
+            .addCase(uploadPv.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.addSuccess = false;
+            })
+            .addCase(uploadPv.fulfilled, (state) => {
+                state.loading = false;
+                state.addSuccess = true;
+            })
+            .addCase(uploadPv.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                state.addSuccess = false;
             });
     },
 });

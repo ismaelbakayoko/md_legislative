@@ -5,7 +5,13 @@ export const addGlobalResultsAPI = async (data) => {
     const formData = new FormData();
     Object.keys(data).forEach(key => {
         if (key === 'pv_pdf' && data[key]) {
-            formData.append('pv_pdf', data[key]);
+            if (Array.isArray(data[key])) {
+                data[key].forEach(file => {
+                    formData.append('pv_pdf', file);
+                });
+            } else {
+                formData.append('pv_pdf', data[key]);
+            }
         } else if (data[key] !== null && data[key] !== undefined) {
             formData.append(key, data[key]);
         }

@@ -17,95 +17,124 @@ const BvResultsModal = ({ isOpen, onClose, bureauData }) => {
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+                <div className="fixed inset-0 transition-opacity bg-gray-500/75 backdrop-blur-sm" onClick={onClose}></div>
 
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-                <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div className="sm:flex sm:items-start">
-                            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                    Résultats du Bureau N° {bureauData?.num_bv}
+                <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-100">
+                    <div className="bg-white px-5 pt-4 pb-3 sm:p-6 sm:pb-4">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tightest">
+                                    Bureau {bureauData?.num_bv}
                                 </h3>
-                                <div className="mt-4">
-                                    {loading ? (
-                                        <div className="flex justify-center py-4">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
-                                        </div>
-                                    ) : currentBvResultats ? (
-                                        <div className="space-y-4 text-sm text-gray-600">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="py-2 border-b border-gray-100">
-                                                    <span className="block text-xs font-semibold text-gray-500 uppercase">Population Électorale</span>
-                                                    <span className="block text-lg font-bold text-gray-900">{currentBvResultats.pop_elect?.toLocaleString()}</span>
-                                                </div>
-                                                <div className="py-2 border-b border-gray-100">
-                                                    <span className="block text-xs font-semibold text-gray-500 uppercase">Votants</span>
-                                                    <span className="block text-lg font-bold text-gray-900">{currentBvResultats.nbre_votants?.toLocaleString()}</span>
-                                                </div>
-                                                <div className="py-2 border-b border-gray-100">
-                                                    <span className="block text-xs font-semibold text-gray-500 uppercase">Exprimés</span>
-                                                    <span className="block text-lg font-bold text-indigo-600">{currentBvResultats.bulletins_exprimes?.toLocaleString()}</span>
-                                                </div>
-                                                <div className="py-2 border-b border-gray-100">
-                                                    <span className="block text-xs font-semibold text-gray-500 uppercase">Astreints</span>
-                                                    <span className="block text-lg font-bold text-gray-900">{currentBvResultats.pers_astreint?.toLocaleString()}</span>
-                                                </div>
-                                                <div className="py-2">
-                                                    <span className="block text-xs font-semibold text-gray-500 uppercase">Nuls</span>
-                                                    <span className="block text-lg font-bold text-red-600">{currentBvResultats.bulletins_nuls?.toLocaleString()}</span>
-                                                </div>
-                                                <div className="py-2">
-                                                    <span className="block text-xs font-semibold text-gray-500 uppercase">Blancs</span>
-                                                    <span className="block text-lg font-bold text-gray-600">{currentBvResultats.bulletins_blancs?.toLocaleString()}</span>
-                                                </div>
-                                            </div>
-
-                                            {currentBvResultats.pv_pdf && currentBvResultats.pv_pdf.length > 0 && (
-                                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                                    <h4 className="font-semibold text-gray-900 mb-2">Pièces Jointes (PV)</h4>
-                                                    <ul className="space-y-2">
-                                                        {currentBvResultats.pv_pdf.map((file, idx) => (
-                                                            <li key={idx}>
-                                                                <a
-                                                                    href={file.url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
-                                                                >
-                                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                                    </svg>
-                                                                    {file.name}
-                                                                </a>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-
-                                            <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-400 flex flex-col space-y-1">
-                                                <span>Saisi par : {currentBvResultats.saisie_par}</span>
-                                                <span>Date : {new Date(currentBvResultats.date_saisie).toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-center text-gray-500 py-4">Aucun résultat trouvé pour ce bureau.</p>
-                                    )}
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-brand-50 text-brand-700 border border-brand-100 uppercase tracking-widest">
+                                        Infos
+                                    </span>
+                                    <span className="text-xs font-bold text-gray-400">ID: {bureauData?.id_bv}</span>
                                 </div>
                             </div>
+                            <button onClick={onClose} className="p-1.5 bg-gray-50 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="mt-2">
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600 mb-3"></div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chargement...</p>
+                                </div>
+                            ) : currentBvResultats ? (
+                                <div className="space-y-4">
+                                    {/* Global Stats Grid - Optimized to 3 columns */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="bg-white p-2 rounded-xl border border-gray-200 text-center shadow-sm">
+                                            <div className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Inscrits</div>
+                                            <div className="text-sm font-black text-gray-900 tabular-nums">{currentBvResultats.pop_elect?.toLocaleString()}</div>
+                                        </div>
+                                        <div className="bg-brand-50/50 p-2 rounded-xl border border-brand-100 text-center shadow-sm">
+                                            <div className="text-[9px] text-brand-400 uppercase font-black tracking-widest mb-0.5">Votants</div>
+                                            <div className="text-sm font-black text-brand-700 tabular-nums">{currentBvResultats.nbre_votants?.toLocaleString()}</div>
+                                        </div>
+                                        <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100 text-center shadow-sm">
+                                            <div className="text-[9px] text-emerald-500 uppercase font-black tracking-widest mb-0.5">Exprimés</div>
+                                            <div className="text-sm font-black text-emerald-600 tabular-nums">{currentBvResultats.bulletins_exprimes?.toLocaleString()}</div>
+                                        </div>
+                                        <div className="bg-gray-50 p-2 rounded-xl border border-gray-100 text-center shadow-sm">
+                                            <div className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Astreints</div>
+                                            <div className="text-sm font-black text-gray-700 tabular-nums">{currentBvResultats.pers_astreint?.toLocaleString()}</div>
+                                        </div>
+                                        <div className="bg-red-50/50 p-2 rounded-xl border border-red-100 text-center shadow-sm">
+                                            <div className="text-[9px] text-red-400 uppercase font-black tracking-widest mb-0.5">Nuls</div>
+                                            <div className="text-sm font-black text-red-600 tabular-nums">{currentBvResultats.bulletins_nuls?.toLocaleString()}</div>
+                                        </div>
+                                        <div className="bg-gray-50 p-2 rounded-xl border border-gray-100 text-center shadow-sm">
+                                            <div className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Blancs</div>
+                                            <div className="text-sm font-black text-gray-700 tabular-nums">{currentBvResultats.bulletins_blancs?.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* PV Section - Compact list */}
+                                    {currentBvResultats.pv_pdf && currentBvResultats.pv_pdf.length > 0 && (
+                                        <div className="bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+                                            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">PV (PDF)</h4>
+                                            <div className="grid grid-cols-1 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                                                {currentBvResultats.pv_pdf.map((file, idx) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-lg hover:border-brand-500 transition-all group"
+                                                    >
+                                                        <div className="flex items-center min-w-0">
+                                                            <div className="w-6 h-6 rounded bg-red-50 flex items-center justify-center mr-2 group-hover:bg-red-100">
+                                                                <svg className="w-3.5 h-3.5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
+                                                                </svg>
+                                                            </div>
+                                                            <span className="text-xs font-bold text-gray-700 truncate">{file.name || `PV_${idx + 1}.pdf`}</span>
+                                                        </div>
+                                                        <svg className="w-4 h-4 text-gray-300 group-hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                        </svg>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Footer Info - Side by side */}
+                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Par</span>
+                                            <span className="text-xs font-bold text-gray-500">{currentBvResultats.saisie_par}</span>
+                                        </div>
+                                        <span className="text-[11px] font-bold text-gray-400 tabular-nums">
+                                            {new Date(currentBvResultats.date_saisie).toLocaleDateString('fr-FR', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Aucun résultat</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <div className="bg-gray-50 px-5 py-3 flex justify-end">
                         <button
                             type="button"
-                            className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:ml-3 sm:w-auto sm:text-sm"
+                            className="px-5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-700 hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
                             onClick={onClose}
                         >
                             Fermer

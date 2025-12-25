@@ -394,7 +394,7 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
     return (
         <div className="flex flex-col lg:flex-row gap-2 items-center">
             {/* Diagramme circulaire à gauche */}
-            <div className="w-full lg:w-6/12 flex justify-center">
+            <div className="w-full lg:w-5/12 flex justify-center">
                 <div className="w-full max-w-xs">
                     <Pie data={data} options={options} />
                 </div>
@@ -423,19 +423,19 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 w-full">
                                         {/* Nom du candidat : toujours visible en entier */}
-                                        <p className="font-bold text-gray-900 text-xs whitespace-nowrap">
+                                        <p className="font-bold text-gray-900 text-lg whitespace-nowrap">
                                             {candidate.nom_prenoms || candidate.nom}
                                         </p>
 
                                         {/* Parti : prend l’espace restant et tronque */}
-                                        <span className="ml-auto max-w-[45%] text-[11px] font-semibold text-gray-600 
+                                        <span className="ml-auto max-w-[45%] text-[14px] font-semibold text-gray-600 
                    bg-gray-100 px-2 py-0.5 rounded truncate text-right">
                                             {candidate.parti}
                                         </span>
                                     </div>
 
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-[10px] font-bold text-gray-600 whitespace-nowrap">
+                                        <span className="text-[18px] font-bold text-gray-600 whitespace-nowrap">
                                             {candidate.voix.toLocaleString()} voix
                                         </span>
 
@@ -454,7 +454,7 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
                                             </div>
 
                                             <span
-                                                className="text-[10px] font-extrabold whitespace-nowrap"
+                                                className="text-[18px] font-extrabold whitespace-nowrap"
                                                 style={{ color: color }}
                                             >
                                                 {percentage}%
