@@ -29,7 +29,25 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        console.error('API Error:', error);
+        // Log l'erreur pour le débogage
+        console.error('API Error:', error.response?.data || error.message);
+
+        // Si le serveur renvoie 401 (Non autorisé), cela signifie que le token est expiré ou invalide
+        if (error.response && error.response.status === 401) {
+            console.warn('Session expirée ou Token invalide. Redirection vers la page de connexion...');
+
+            // On importe le store dynamiquement pour éviter les dépendances circulaires
+            // et on dispatch l'action logout
+            import('../app/store').then(({ store }) => {
+                store.dispatch({ type: 'auth/logout' });
+            });
+
+            // On redirige vers login si on n'y est pas déjà
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
+
         return Promise.reject(error);
     }
 );
