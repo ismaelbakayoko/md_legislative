@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchResultatsDepartementAPI, fetchResultatsCandidatAPI } from './resultatsAPI';
 import { addGlobalResultsAPI, addDetailedResultsAPI } from '../results/resultsAPI';
-import { fetchTotauxCirconscriptionAPI, listResultatsGroupesAPI, fetchLieuxVoteByDepartementAPI } from './totauxAPI';
+import { fetchTotauxCirconscriptionAPI, listResultatsGroupesAPI, fetchLieuxVoteByDepartementAPI, fetchResultatsLocalesCentresAPI } from './totauxAPI';
 
 export const fetchResultatsByDepartement = createAsyncThunk(
     'resultats/fetchByDepartement',
@@ -69,8 +69,21 @@ export const addGlobalResults = createAsyncThunk(
 export const addDetailedResults = createAsyncThunk(
     'resultats/addDetailed',
     async (data, { rejectWithValue }) => {
+        console.log("data d'envoie addDetailedResults :", data)
         try {
             const response = await addDetailedResultsAPI(data);
+            return response;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const fetchResultatsLocalesCentres = createAsyncThunk(
+    'resultats/fetchLocalesCentres',
+    async (data, { rejectWithValue }) => {
+        try {
+            const response = await fetchResultatsLocalesCentresAPI(data);
             return response;
         } catch (error) {
             return rejectWithValue(error.message);
@@ -96,6 +109,7 @@ const resultatsSlice = createSlice({
     name: 'resultats',
     initialState: {
         currentDepartement: null,
+        currentDepartementId: null,
         currentCandidat: null,
         currentBvResultats: null,
         lieuxVoteByDepartement: [],
@@ -110,6 +124,9 @@ const resultatsSlice = createSlice({
             bulletins_exprimes: 0
         },
         totaux_par_parti: [],
+        resultats_centre: [],
+        resultats_locales: [],
+        loadingLocalesCentres: false,
         loading: false,
         error: null,
         addSuccess: false // Track success state
@@ -117,14 +134,38 @@ const resultatsSlice = createSlice({
     reducers: {
         clearCurrentResultats: (state) => {
             state.currentDepartement = null;
+            state.currentDepartementId = null;
             state.currentCandidat = null;
             state.error = null;
         },
         resetAddSuccess: (state) => {
             state.addSuccess = false;
         },
+        clearResultatsError: (state) => {
+            state.error = null;
+        },
         clearCurrentBvResultats: (state) => {
             state.currentBvResultats = null;
+        },
+        clearAllData: (state) => {
+            state.currentDepartement = null;
+            state.currentDepartementId = null;
+            state.currentCandidat = null;
+            state.currentBvResultats = null;
+            state.lieuxVoteByDepartement = [];
+            state.resultsByCandidate = {};
+            state.totaux_par_parti = [];
+            state.resultats_centre = [];
+            state.resultats_locales = [];
+            state.totaux_globaux = {
+                pop_elect: 0,
+                pers_astreint: 0,
+                nbre_votants: 0,
+                bulletins_nuls: 0,
+                bulletins_blancs: 0,
+                bulletins_exprimes: 0
+            };
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -139,6 +180,8 @@ const resultatsSlice = createSlice({
             .addCase(fetchResultatsByDepartement.fulfilled, (state, action) => {
                 state.loading = false;
                 state.currentDepartement = action.payload;
+                // Store the ID used for fetching
+                state.currentDepartementId = action.meta.arg?.id || action.meta.arg;
             })
             .addCase(fetchResultatsByDepartement.rejected, (state, action) => {
                 state.loading = false;
@@ -287,9 +330,23 @@ const resultatsSlice = createSlice({
             .addCase(getLieuxVoteByDepartement.rejected, (state, action) => {
                 state.loadingLieuxVote = false;
                 state.error = action.payload;
+            })
+            // Fetch Resultats Locales Centres
+            .addCase(fetchResultatsLocalesCentres.pending, (state) => {
+                state.loadingLocalesCentres = true;
+                state.error = null;
+            })
+            .addCase(fetchResultatsLocalesCentres.fulfilled, (state, action) => {
+                state.loadingLocalesCentres = false;
+                state.resultats_centre = action.payload.resultats_centre || [];
+                state.resultats_locales = action.payload.resultats_locales || [];
+            })
+            .addCase(fetchResultatsLocalesCentres.rejected, (state, action) => {
+                state.loadingLocalesCentres = false;
+                state.error = action.payload;
             });
     },
 });
 
-export const { clearCurrentResultats, resetAddSuccess, clearCurrentBvResultats } = resultatsSlice.actions;
+export const { clearCurrentResultats, resetAddSuccess, clearResultatsError, clearCurrentBvResultats, clearAllData } = resultatsSlice.actions;
 export default resultatsSlice.reducer;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { addGlobalResults, resetAddSuccess } from '../features/resultats/resultatsSlice';
+import { addGlobalResults, resetAddSuccess, clearResultatsError } from '../features/resultats/resultatsSlice';
 import { selectAuthUser } from '../features/auth/authSlice';
 
 const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
@@ -8,7 +9,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
     const user = useSelector(selectAuthUser);
     const { loading, error, addSuccess } = useSelector((state) => state.resultats);
     const { elections, selectedCirconscription } = useSelector((state) => state.settings);
-    
+
 
     const [formData, setFormData] = useState({
         pop_elect: '',
@@ -20,8 +21,37 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
     });
     const [pdfFile, setPdfFile] = useState(null);
 
+    // Mettre à jour le formulaire quand bureauData change
+    useEffect(() => {
+        if (isOpen && bureauData) {
+            const initialPopElect = (bureauData.bv_configs && bureauData.bv_configs.length > 0)
+                ? bureauData.bv_configs[0].pop_elect
+                : '';
+
+            setFormData({
+                pop_elect: initialPopElect,
+                pers_astreint: '',
+                nbre_votants: '',
+                bulletins_nuls: '',
+                bulletins_blancs: '',
+                bulletins_exprimes: ''
+            });
+        }
+    }, [isOpen, bureauData]);
+
+    // Clear errors when modal opens or closes
+    useEffect(() => {
+        if (isOpen) {
+            dispatch(clearResultatsError());
+        }
+        return () => {
+            dispatch(clearResultatsError());
+        };
+    }, [isOpen, dispatch]);
+
     useEffect(() => {
         if (addSuccess) {
+            toast.success("Les résultats globaux ont été enregistrés avec succès !");
             onClose();
             dispatch(resetAddSuccess());
             // Reset form
@@ -35,11 +65,26 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
             });
             setPdfFile(null);
         }
-    }, [addSuccess, onClose, dispatch]);
+        if (error) {
+            toast.error(`Erreur : ${error}`);
+        }
+    }, [addSuccess, error, onClose, dispatch]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const newState = { ...prev, [name]: value };
+
+            // Calcul automatique des bulletins exprimés
+            // Formule demandée: nombre de votant - bulletin nul
+            if (name === 'nbre_votants' || name === 'bulletins_nuls') {
+                const votants = parseInt(name === 'nbre_votants' ? value : prev.nbre_votants) || 0;
+                const nuls = parseInt(name === 'bulletins_nuls' ? value : prev.bulletins_nuls) || 0;
+                newState.bulletins_exprimes = Math.max(0, votants - nuls).toString();
+            }
+
+            return newState;
+        });
     };
 
     const handleFileChange = (e) => {
@@ -47,7 +92,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
         if (file && file.type === 'application/pdf') {
             setPdfFile(file);
         } else if (file) {
-            alert('Veuillez sélectionner un fichier PDF');
+            toast.error('Veuillez sélectionner un fichier PDF');
             e.target.value = '';
         }
     };
@@ -55,7 +100,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-           // Get current election
+        // Get current election
         const currentElection = elections && elections.length > 0 ? elections[0] : null;
 
         if (!currentElection || !selectedCirconscription) {
@@ -67,7 +112,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
             ...formData,
             id_bv: bureauData?.id_bv,
             saisie_par: user?.contact_user,
-            id_cir : selectedCirconscription?.id_cir,
+            id_cir: selectedCirconscription?.id_cir,
             id_election: currentElection?.id_election,
             nb_tour: 1,
             pv_pdf: pdfFile // Include the PDF file
@@ -94,19 +139,15 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
                             <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-headline">
                                 Ajouter Résultats - BV {bureauData?.num_bv}
                             </h3>
-                            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Population Électorale</label>
-                                        <input
-                                            type="number"
-                                            name="pop_elect"
-                                            required
-                                            value={formData.pop_elect}
-                                            onChange={handleChange}
-                                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                                        />
+                                        <div className="mt-1 block w-full border border-gray-200 bg-gray-50 rounded-md py-2 px-3 text-sm text-gray-600 font-semibold italic">
+                                            {(bureauData?.bv_configs && bureauData.bv_configs.length > 0)
+                                                ? bureauData.bv_configs[0].pop_elect
+                                                : 'N/A'}
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Personnes en Astreinte</label>
@@ -154,14 +195,9 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Bulletins Exprimés</label>
-                                        <input
-                                            type="number"
-                                            name="bulletins_exprimes"
-                                            required
-                                            value={formData.bulletins_exprimes}
-                                            onChange={handleChange}
-                                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                                        />
+                                        <div className="mt-1 block w-full border border-gray-200 bg-gray-50 rounded-md py-2 px-3 text-sm text-gray-600 font-bold">
+                                            {formData.bulletins_exprimes || '0'}
+                                        </div>
                                     </div>
                                 </div>
 

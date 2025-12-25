@@ -25,10 +25,17 @@ const LieuxVote = () => {
 
 
     useEffect(() => {
+        // Ne charger que si la liste est vide
+        if (selectedDepartement && (!lieuxVote || lieuxVote.length === 0)) {
+            dispatch(fetchLieuxVote(selectedDepartement.nom_departement));
+        }
+    }, [dispatch, selectedDepartement, lieuxVote]);
+
+    const handleRefresh = () => {
         if (selectedDepartement) {
             dispatch(fetchLieuxVote(selectedDepartement.nom_departement));
         }
-    }, [dispatch, selectedDepartement]);
+    };
 
     const filteredLieuxVote = React.useMemo(() => {
         if (!searchTerm) return lieuxVote;
@@ -57,10 +64,6 @@ const LieuxVote = () => {
                     id_cir: selectedCirconscription.id_cir,
                     nb_tour: 1,
                 }));
-                console.log("resultats du bureau")
-                console.log(bv.id_bv);
-                console.log(currentElection.id_election);
-                console.log(selectedCirconscription.id_cir);
         }
     };
 
@@ -71,36 +74,44 @@ const LieuxVote = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                        Lieux de Vote : {selectedDepartement?.nom_departement}
-                    </h2>
-                    <div className="text-sm text-gray-500 mt-1">
-                        Dernière mise à jour : {new Date().toLocaleDateString()}
-                    </div>
-                </div>
+            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-start gap-2">
+
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative w-full max-w-md">
                         <input
                             type="text"
-                            placeholder="Rechercher un lieu de vote..."
+                            placeholder="Rechercher une localité ou un lieu..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-gray-300 bg-white shadow-sm transition duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 hover:border-gray-400"
+                            className="w-full pl-11 pr-4 py-2.5 text-sm font-medium rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 hover:border-gray-300 placeholder-gray-400"
                         />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none transition-colors group-focus-within:text-brand-500">
+                            <svg className="h-5 w-5 text-gray-400 group-focus-within:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
                     </div>
 
+                    <button
+                        onClick={handleRefresh}
+                        disabled={loadingLieux}
+                        className="inline-flex items-center px-4 py-2.5 border border-gray-200 text-sm font-bold rounded-xl text-brand-600 bg-white hover:bg-brand-50 shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none active:scale-95 disabled:opacity-50"
+                        title="Rafraîchir les données"
+                    >
+                        <svg className={`w-5 h-5 mr-2 ${loadingLieux ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Rafraîchir
+                    </button>
+
                     <Link
                         to={`/departement/${id}`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-brand-700 bg-brand-100 hover:bg-brand-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                        className="inline-flex items-center px-5 py-2.5 border border-gray-200 text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none active:scale-95 group"
                     >
-                        &larr; Retour aux résultats
+                        <svg className="w-4 h-4 mr-2 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Retour
                     </Link>
                 </div>
             </div>

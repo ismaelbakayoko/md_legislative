@@ -1,16 +1,17 @@
 import React, { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchResultatsByDepartement, fetchTotauxCirconscription, getLieuxVoteByDepartement } from '../features/resultats/resultatsSlice';
+import { fetchResultatsByDepartement, fetchTotauxCirconscription, getLieuxVoteByDepartement, clearAllData } from '../features/resultats/resultatsSlice';
 import { fetchDepartements } from '../features/departements/departementsSlice';
 import { selectResultatsLoading } from '../features/resultats/selectors';
 import Loader from '../components/Loader';
 import StatCard from '../components/StatCard';
 import ResultTable from '../components/ResultTable';
 import { ResultBarChart, ResultPieChart, ResultPieChartWithCustomLegend } from '../components/Charts';
-import { fetchCandidatesInfo } from '../features/candidats/candidatsSlice';
+import { fetchCandidatesInfo, clearCandidates } from '../features/candidats/candidatsSlice';
 import CandidatesList from '../components/CandidatesList';
 import useCustomWebSocket from '../hooks/useCustomWebSocket';
+import { fetchElections, fetchRegions, resetSettings, clearRegions } from '../features/settings/settingsSlice';
 
 const ResultatsDepartement = () => {
     const { id } = useParams();
@@ -19,6 +20,7 @@ const ResultatsDepartement = () => {
 
     const loading = useSelector(selectResultatsLoading);
     const currentDepartement = useSelector((state) => state.resultats.currentDepartement);
+    const currentDepartementId = useSelector((state) => state.resultats.currentDepartementId);
     const selectedDepartement = useSelector((state) => state.settings.selectedDepartement);
     const totaux_globaux = useSelector((state) => state.resultats.totaux_globaux);
     const totaux_par_parti = useSelector((state) => state.resultats.totaux_par_parti);
@@ -30,50 +32,42 @@ const ResultatsDepartement = () => {
     const { elections, selectedCirconscription } = useSelector((state) => state.settings);
 
     useEffect(() => {
-        if (effectiveId) {
+        // Ne charger que si non présent ou différent
+        if (effectiveId && currentDepartementId !== effectiveId) {
             dispatch(fetchResultatsByDepartement(effectiveId));
         }
-    }, [dispatch, effectiveId]);
+    }, [dispatch, effectiveId, currentDepartementId]);
 
     // Fetch Totaux Circonscription
     useEffect(() => {
         if (elections.length > 0 && selectedCirconscription) {
-            const currentElection = elections[0];
-            dispatch(fetchTotauxCirconscription({
-                id_election: currentElection.id_election,
-                id_cir: selectedCirconscription.id_cir,
-                nb_tour: 1,
-                annee: new Date().getFullYear().toString()
-            }));
+            // Ne charger que si les totaux n'existent pas encore
+            if (!totaux_par_parti || totaux_par_parti.length === 0) {
+                const currentElection = elections[0];
+                dispatch(fetchTotauxCirconscription({
+                    id_election: currentElection.id_election,
+                    id_cir: selectedCirconscription.id_cir,
+                    nb_tour: 1,
+                    annee: new Date().getFullYear().toString()
+                }));
+            }
         }
-    }, [dispatch, elections, selectedCirconscription]);
+    }, [dispatch, elections, selectedCirconscription, totaux_par_parti]);
 
     // Fetch Candidates Info
     useEffect(() => {
         if (elections.length > 0 && selectedCirconscription) {
-            const currentElection = elections[0]; // Assuming first election is default/active
-            console.log("Fetching candidates with:", {
-                id_election: currentElection.id_election,
-                id_cir: selectedCirconscription.id_cir,
-                nb_tour: 1,
-                election: currentElection,
-                circonscription: selectedCirconscription
-            });
-
-            dispatch(fetchCandidatesInfo({
-                id_election: currentElection.id_election,
-                id_cir: selectedCirconscription.id_cir,
-                nb_tour: 1 // Default to tour 1
-            }));
-        } else {
-            console.log("Cannot fetch candidates:", {
-                hasElections: elections.length > 0,
-                hasCirconscription: !!selectedCirconscription,
-                elections,
-                selectedCirconscription
-            });
+            // Ne charger que si la liste des partis est vide
+            if (!partis || partis.length === 0) {
+                const currentElection = elections[0];
+                dispatch(fetchCandidatesInfo({
+                    id_election: currentElection.id_election,
+                    id_cir: selectedCirconscription.id_cir,
+                    nb_tour: 1
+                }));
+            }
         }
-    }, [dispatch, elections, selectedCirconscription]);
+    }, [dispatch, elections, selectedCirconscription, partis]);
 
     // ============================================
     // WebSocket Integration - Real-time Updates
@@ -129,6 +123,24 @@ const ResultatsDepartement = () => {
                         isSilent: true
                     }));
                 }
+                break;
+
+            case 'UPDATE_ELECTIONS':
+                if (data.payload?.status === false) {
+                    console.log("🚫 Élection désactivée : Réinitialisation de l'application");
+                    dispatch(clearAllData());
+                    dispatch(clearCandidates());
+                    dispatch(resetSettings());
+                    // Optionnel: rediriger vers l'accueil ou ouvrir le modal de settings
+                    alert("L'élection en cours a été désactivée. Les données ont été effacées.");
+                } else {
+                    dispatch(fetchElections());
+                }
+                break;
+            case 'UPDATE_REGIONS':
+                console.log("🔄 Mise à jour des régions détectée...");
+                dispatch(clearRegions());
+                dispatch(fetchRegions());
                 break;
 
             default:
@@ -211,10 +223,9 @@ const ResultatsDepartement = () => {
             <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-                            <span className="text-brand-600 mr-2">Résultats :</span>
-                            {selectedCirconscription?.nom_circonscription}
-                        </h2>
+                        <h3 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                            {selectedCirconscription.code_cir + '-' + selectedCirconscription?.circonscription}
+                        </h3>
                         {/* Indicateur de connexion WebSocket */}
                         <div className={`flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-500 ${isConnected
                             ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
@@ -256,8 +267,7 @@ const ResultatsDepartement = () => {
             </div>
 
             {/* Global Stats */}
-            {totaux_globaux && (
-                console.log(totaux_globaux, "totaux globaux"),
+            {(totaux_globaux || selectedCirconscription) && (
                 <div className="mb-6">
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                         <svg className="w-5 h-5 mr-2 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,7 +280,7 @@ const ResultatsDepartement = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Population Électorale</p>
-                                    <p className="text-xl font-extrabold text-blue-900 mt-1">{(totaux_globaux?.pop_elect || 0).toLocaleString()}</p>
+                                    <p className="text-xl font-extrabold text-blue-900 mt-1">{(selectedCirconscription?.pop_elect || 0).toLocaleString()}</p>
                                 </div>
                                 <div className="bg-blue-50 rounded-lg p-1.5">
                                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,6 +332,20 @@ const ResultatsDepartement = () => {
                             </div>
                         </div>
 
+                        <div className="bg-white border-l-4 border-indigo-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Exprimés</p>
+                                    <p className="text-xl font-extrabold text-indigo-900 mt-1">{(totaux_globaux?.bulletins_exprimes || 0).toLocaleString()}</p>
+                                </div>
+                                <div className="bg-indigo-50 rounded-lg p-1.5">
+                                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="bg-white border-l-4 border-slate-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -336,19 +360,7 @@ const ResultatsDepartement = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white border-l-4 border-indigo-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Exprimés</p>
-                                    <p className="text-xl font-extrabold text-indigo-900 mt-1">{(totaux_globaux?.bulletins_exprimes || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-indigo-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             )}

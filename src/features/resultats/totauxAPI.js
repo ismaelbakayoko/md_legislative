@@ -9,7 +9,8 @@ export const fetchTotauxCirconscriptionAPI = async (data) => {
 };
 
 export const listResultatsGroupesAPI = async (data) => {
-    const response = await api.post('resultats/lister-resultats-groupes', { data });
+    console.log("API Request - listResultatsGroupesAPI:", { data });
+    const response = await api.post('resultats/lister-resultats-groupes', data);
     if (response.data && response.data.success) {
         return response.data.resultats;
     }
@@ -30,4 +31,12 @@ export const fetchLieuxVoteByDepartementAPI = async (nom_departement) => {
         console.error("API Error - fetchLieuxVoteByDepartementAPI:", error);
         throw error;
     }
+};
+
+export const fetchResultatsLocalesCentresAPI = async (data) => {
+    const response = await api.post('resultats/resultats-par-locales-centres', data);
+    if (response.data && response.data.success) {
+        return response.data;
+    }
+    throw new Error(response.data?.message || "Erreur lors de la récupération des résultats par localité/centre");
 };

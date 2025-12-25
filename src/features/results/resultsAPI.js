@@ -11,7 +11,7 @@ export const addGlobalResultsAPI = async (data) => {
         }
     });
 
-    const response = await api.post('resultats/ajouter-resultats-groupes', formData, {
+    const response = await api.post('resultats/ajouter-resultats-groupes-desktop', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -24,7 +24,7 @@ export const addGlobalResultsAPI = async (data) => {
 };
 
 export const addDetailedResultsAPI = async (data) => {
-    const response = await api.post('resultats/ajouter-resultats-bv', data);
+    const response = await api.post('resultats/ajouter-resultats-bv-desktop', data);
     if (response.data && response.data.success) {
         return response.data;
     }

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { fetchResultatsByCandidat, getLieuxVoteByDepartement } from '../features/resultats/resultatsSlice';
 import { fetchCandidatesInfo } from '../features/candidats/candidatsSlice';
 import { selectCurrentCandidatResultats, selectResultatsLoading } from '../features/resultats/selectors';
@@ -10,6 +10,7 @@ import StatCard from '../components/StatCard';
 const CandidatDetail = () => {
     const { id } = useParams();
     const location = useLocation();
+    const navigate = useNavigate();
     const dispatch = useDispatch();
 
     const { partis, loading: loadingCandidates } = useSelector((state) => state.candidats);
@@ -116,6 +117,18 @@ const CandidatDetail = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
+            <div className="mb-6">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm transition-all duration-300 active:scale-95 group"
+                >
+                    <svg className="w-4 h-4 mr-2 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Retour
+                </button>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
                 <div className="flex items-center space-x-6">
                     <div className="flex-shrink-0 h-24 w-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-md">

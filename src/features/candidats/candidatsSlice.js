@@ -20,7 +20,13 @@ const candidatsSlice = createSlice({
         loading: false,
         error: null
     },
-    reducers: {},
+    reducers: {
+        clearCandidates: (state) => {
+            state.partis = [];
+            state.total = 0;
+            state.error = null;
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchCandidatesInfo.pending, (state, action) => {
@@ -41,4 +47,5 @@ const candidatsSlice = createSlice({
     }
 });
 
+export const { clearCandidates } = candidatsSlice.actions;
 export default candidatsSlice.reducer;

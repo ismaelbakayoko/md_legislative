@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from './features/auth/authSlice';
 import Header from './components/Header';
@@ -103,6 +105,7 @@ function App() {
             </ProtectedRoute>
           } />
         </Routes>
+        <Toaster position="top-right" reverseOrder={false} />
       </div>
     </Router>
   );

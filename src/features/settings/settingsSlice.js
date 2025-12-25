@@ -93,6 +93,29 @@ const settingsSlice = createSlice({
         setSelectedCirconscription: (state, action) => {
             state.selectedCirconscription = action.payload;
             localStorage.setItem('selectedCirconscription', JSON.stringify(action.payload));
+        },
+        resetSettings: (state) => {
+            state.selectedRegion = null;
+            state.selectedDepartement = null;
+            state.selectedCirconscription = null;
+            state.regions = [];
+            state.departements = [];
+            state.circonscriptions = [];
+            state.elections = [];
+            localStorage.removeItem('selectedRegion');
+            localStorage.removeItem('selectedDepartement');
+            localStorage.removeItem('selectedCirconscription');
+        },
+        clearRegions: (state) => {
+            state.regions = [];
+            state.selectedRegion = null;
+            state.selectedDepartement = null;
+            state.selectedCirconscription = null;
+            state.departements = [];
+            state.circonscriptions = [];
+            localStorage.removeItem('selectedRegion');
+            localStorage.removeItem('selectedDepartement');
+            localStorage.removeItem('selectedCirconscription');
         }
     },
     extraReducers: (builder) => {
@@ -148,5 +171,5 @@ const settingsSlice = createSlice({
     }
 });
 
-export const { setSelectedRegion, setSelectedDepartement, setSelectedCirconscription } = settingsSlice.actions;
+export const { setSelectedRegion, setSelectedDepartement, setSelectedCirconscription, resetSettings, clearRegions } = settingsSlice.actions;
 export default settingsSlice.reducer;

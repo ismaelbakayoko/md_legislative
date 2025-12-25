@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { addDetailedResults, resetAddSuccess } from '../features/resultats/resultatsSlice';
+import { addDetailedResults, resetAddSuccess, clearResultatsError } from '../features/resultats/resultatsSlice';
 import { selectAuthUser } from '../features/auth/authSlice';
 
 const AddDetailedResultsModal = ({ isOpen, onClose, bureauData }) => {
@@ -12,12 +13,26 @@ const AddDetailedResultsModal = ({ isOpen, onClose, bureauData }) => {
 
     const [partiResults, setPartiResults] = useState({});
 
+    // Clear errors when modal opens or closes
+    useEffect(() => {
+        if (isOpen) {
+            dispatch(clearResultatsError());
+        }
+        return () => {
+            dispatch(clearResultatsError());
+        };
+    }, [isOpen, dispatch]);
+
     useEffect(() => {
         if (addSuccess) {
+            toast.success("Les résultats détaillés ont été enregistrés avec succès !");
             onClose();
             dispatch(resetAddSuccess());
         }
-    }, [addSuccess, onClose, dispatch]);
+        if (error) {
+            toast.error(`Erreur : ${error}`);
+        }
+    }, [addSuccess, error, onClose, dispatch]);
 
     useEffect(() => {
         // Initialize results object for each party
@@ -48,7 +63,7 @@ const AddDetailedResultsModal = ({ isOpen, onClose, bureauData }) => {
         console.log('Selected election:', currentElection);
         console.log('Selected bureau:', bureauData);
         console.log('Full user object:', user);
-        console.log('User contact:', user?.contact);
+        console.log('User contact:', user?.contact_user);
         // Build the listeResultat_bv array
         const listeResultat_bv = Object.entries(partiResults)
             .filter(([id_parti, voix_obtenues]) => voix_obtenues && voix_obtenues !== '')
@@ -65,7 +80,7 @@ const AddDetailedResultsModal = ({ isOpen, onClose, bureauData }) => {
 
         // Send all results in one call
         if (listeResultat_bv.length > 0) {
-            dispatch(addDetailedResults({ listeResultat_bv }));
+            dispatch(addDetailedResults({ listeResultats: listeResultat_bv }));
             console.log('Selected listeResultat_bv:', listeResultat_bv);
         }
     };
@@ -90,7 +105,6 @@ const AddDetailedResultsModal = ({ isOpen, onClose, bureauData }) => {
                             <p className="text-sm text-gray-500 mt-2">
                                 Saisissez le nombre de voix obtenues par chaque parti
                             </p>
-                            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                             <form onSubmit={handleSubmit} className="mt-5">
                                 <div className="max-h-96 overflow-y-auto space-y-3">
                                     {partis && partis.length > 0 ? (

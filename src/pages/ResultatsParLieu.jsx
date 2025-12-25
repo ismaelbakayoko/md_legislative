@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getLieuxVoteByDepartement } from '../features/resultats/resultatsSlice';
+import { fetchResultatsLocalesCentres, getLieuxVoteByDepartement } from '../features/resultats/resultatsSlice';
 import Loader from '../components/Loader';
 import ResultatsLieuModal from '../components/ResultatsLieuModal';
-import { ChevronLeftIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
+import ResultatsAggregatModal from '../components/ResultatsAggregatModal';
+import { ChevronLeftIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon, MapPinIcon, BuildingOfficeIcon, EyeIcon } from '@heroicons/react/24/solid';
 import useCustomWebSocket from '../hooks/useCustomWebSocket';
 
 const ResultatsParLieu = () => {
@@ -13,47 +14,72 @@ const ResultatsParLieu = () => {
     const dispatch = useDispatch();
     const { nom_departement } = location.state || {};
     const selectedDepartement = useSelector((state) => state.settings.selectedDepartement);
+    const selectedCirconscription = useSelector((state) => state.settings.selectedCirconscription);
+    const { elections } = useSelector((state) => state.settings);
 
-    const { lieuxVoteByDepartement, loadingLieuxVote, error } = useSelector((state) => state.resultats);
+    const {
+        lieuxVoteByDepartement,
+        loadingLieuxVote,
+        resultats_centre,
+        resultats_locales,
+        loadingLocalesCentres,
+        error
+    } = useSelector((state) => state.resultats);
+
+    const [activeTab, setActiveTab] = useState('bv'); // 'bv', 'localite', 'centre'
     const [sortedData, setSortedData] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: 'nom_local', direction: 'ascending' });
 
+    // Charger les lieux de vote (BV)
     useEffect(() => {
-        if (selectedDepartement?.nom_departement) {
+        if (selectedDepartement?.nom_departement && (!lieuxVoteByDepartement || lieuxVoteByDepartement.length === 0)) {
             dispatch(getLieuxVoteByDepartement(selectedDepartement.nom_departement));
         }
-    }, [dispatch, selectedDepartement]);
+    }, [dispatch, selectedDepartement, lieuxVoteByDepartement]);
 
-    // ============================================
-    // WebSocket Integration - Real-time Updates
-    // ============================================
+    // Charger les resultats locales/centres
+    useEffect(() => {
+        if ((activeTab === 'localite' || activeTab === 'centre') && elections.length > 0 && selectedDepartement) {
+            // Uniquement si on n'a pas déjà les données ou si on veut forcer
+            if (resultats_locales.length === 0 || resultats_centre.length === 0) {
+                const currentElection = elections[0];
+                dispatch(fetchResultatsLocalesCentres({
+                    id_election: currentElection.id_election,
+                    nom_departement: selectedDepartement.nom_departement,
+                    nb_tour: 1
+                }));
+            }
+        }
+    }, [dispatch, activeTab, elections, selectedDepartement, resultats_locales.length]);
 
-    // Handler pour les messages WebSocket
+    // ... (WebSocket remains the same)
     const handleWebSocketMessage = useCallback((data) => {
-        console.log("📨 WebSocket: Message reçu (ResultatsParLieu):", data);
-
         const eventType = data.event || data.type;
-
         if (eventType === 'INSERT_RESULTATS_BV' || eventType === 'INSERT_RESULTATS_GROUPES') {
-            console.log("🔄 Rafraîchissement lieux de vote");
-
             if (selectedDepartement?.nom_departement) {
                 dispatch(getLieuxVoteByDepartement({ nom_departement: selectedDepartement.nom_departement, isSilent: true }));
             }
+            if (elections.length > 0 && selectedDepartement) {
+                const currentElection = elections[0];
+                dispatch(fetchResultatsLocalesCentres({
+                    id_election: currentElection.id_election,
+                    nom_departement: selectedDepartement.nom_departement,
+                    nb_tour: 1,
+                    isSilent: true
+                }));
+            }
         }
-    }, [dispatch, selectedDepartement]);
+    }, [dispatch, selectedDepartement, elections]);
 
-    // Utiliser le hook WebSocket
-    const { isConnected, connectionStatus } = useCustomWebSocket(handleWebSocketMessage);
+    const { isConnected } = useCustomWebSocket(handleWebSocketMessage);
 
+    // Transformation des données pour le tableau BV
     useEffect(() => {
-        if (lieuxVoteByDepartement && lieuxVoteByDepartement.length > 0) {
-            console.log("Processing Lieux Vote Data:", lieuxVoteByDepartement);
+        if (activeTab === 'bv' && lieuxVoteByDepartement && lieuxVoteByDepartement.length > 0) {
             let flatList = [];
             lieuxVoteByDepartement.forEach(local => {
-                if (local.lieux_vote && Array.isArray(local.lieux_vote)) {
+                if (local.lieux_vote) {
                     local.lieux_vote.forEach(lieu => {
-                        // Vérifier que bureaux_vote existe et n'est pas vide
                         if (lieu.bureaux_vote && lieu.bureaux_vote.length > 0) {
                             flatList.push({
                                 id_local: local.id_local,
@@ -63,18 +89,15 @@ const ResultatsParLieu = () => {
                                 id_bv: lieu.bureaux_vote[0].id_bv,
                                 nom_lieu: lieu.nom_lieu,
                                 nb_bureaux: lieu.bureaux_vote.length,
-                                data: lieu // Store full object just in case
+                                data: lieu
                             });
-                        } else {
-                            console.warn("Lieu sans bureaux de vote:", lieu);
                         }
                     });
                 }
             });
-            console.log("Flat List Created:", flatList);
             setSortedData(flatList);
         }
-    }, [lieuxVoteByDepartement]);
+    }, [lieuxVoteByDepartement, activeTab]);
 
     const requestSort = (key) => {
         let direction = 'ascending';
@@ -84,46 +107,25 @@ const ResultatsParLieu = () => {
         setSortConfig({ key, direction });
     };
 
-    useEffect(() => {
-        if (sortedData.length > 0) {
-            let sortableItems = [...sortedData];
-            if (sortConfig !== null) {
-                sortableItems.sort((a, b) => {
-                    const valA = a[sortConfig.key] || "";
-                    const valB = b[sortConfig.key] || "";
-
-                    if (valA < valB) {
-                        return sortConfig.direction === 'ascending' ? -1 : 1;
-                    }
-                    if (valA > valB) {
-                        return sortConfig.direction === 'ascending' ? 1 : -1;
-                    }
-                    return 0;
-                });
-
-                // Only update if order actually changed to avoid loop - check first/last element or simple check
-                // For now, let's just use string comparison of IDs to check if different
-                const currentIds = sortedData.map(i => i.id_lieu).join(',');
-                const newIds = sortableItems.map(i => i.id_lieu).join(',');
-
-                if (currentIds !== newIds) {
-                    setSortedData(sortableItems);
-                }
-            }
-        }
-    }, [sortConfig]); // Removed lieuxVoteByDepartement dependency to avoid conflict
-
-    const goBack = () => {
-        navigate(-1);
-    };
+    const goBack = () => navigate(-1);
 
     const { partis } = useSelector((state) => state.candidats);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedLieu, setSelectedLieu] = useState(null);
 
+    const [isAggregatModalOpen, setIsAggregatModalOpen] = useState(false);
+    const [selectedAggregat, setSelectedAggregat] = useState(null);
+    const [aggregatTitle, setAggregatTitle] = useState('');
+
     const handleOpenModal = (lieuData) => {
         setSelectedLieu(lieuData);
         setIsModalOpen(true);
+    };
+
+    const handleOpenAggregatModal = (data, type) => {
+        setSelectedAggregat(data);
+        setAggregatTitle(type === 'localite' ? 'Détails par Localité' : 'Détails du Centre de Vote');
+        setIsAggregatModalOpen(true);
     };
 
     const handleCloseModal = () => {
@@ -131,135 +133,245 @@ const ResultatsParLieu = () => {
         setSelectedLieu(null);
     };
 
-    // ... (rest of code before return)
+    const handleCloseAggregatModal = () => {
+        setIsAggregatModalOpen(false);
+        setSelectedAggregat(null);
+    };
 
-    if (loadingLieuxVote) return <Loader />;
+    const isLoading = loadingLieuxVote || (loadingLocalesCentres && (activeTab === 'localite' || activeTab === 'centre'));
 
     return (
         <div className="container mx-auto px-4 py-8">
             <button
                 onClick={goBack}
-                className="mb-6 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                className="mb-6 flex items-center text-gray-500 hover:text-brand-600 font-bold transition-all duration-300 group"
             >
-                <ChevronLeftIcon className="h-5 w-5 mr-1" />
-                Retour
+                <div className="bg-white p-1.5 rounded-lg border border-gray-200 mr-3 group-hover:border-brand-200 shadow-sm transition-all group-hover:scale-110">
+                    <ChevronLeftIcon className="h-4 w-4" />
+                </div>
+                Retour aux statistiques
             </button>
 
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-800">
-                        Lieux de Vote - {nom_departement}
-                    </h2>
-                    <span className="text-sm text-gray-500">
-                        {sortedData.length} Lieux trouvés
-                    </span>
+            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                        Détails des Résultats
+                    </h1>
+                    <p className="text-gray-500 mt-1 font-medium">
+                        Circonscription : <span className="text-brand-600 font-bold">{selectedCirconscription?.code_cir}-{selectedCirconscription?.circonscription}</span>
+                    </p>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                    onClick={() => requestSort('nom_local')}
-                                >
-                                    <div className="flex items-center">
-                                        Localité
-                                        {sortConfig.key === 'nom_local' && (
-                                            sortConfig.direction === 'ascending' ? <ChevronUpIcon className="h-4 w-4 ml-1" /> : <ChevronDownIcon className="h-4 w-4 ml-1" />
-                                        )}
-                                    </div>
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                    onClick={() => requestSort('nom_lieu')}
-                                >
-                                    <div className="flex items-center">
-                                        Lieu de Vote
-                                        {sortConfig.key === 'nom_lieu' && (
-                                            sortConfig.direction === 'ascending' ? <ChevronUpIcon className="h-4 w-4 ml-1" /> : <ChevronDownIcon className="h-4 w-4 ml-1" />
-                                        )}
-                                    </div>
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center"
-                                >
-                                    Bureaux
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center"
-                                >
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {sortedData.map((item, index) => (
-                                <tr key={`${item.id_lieu}-${index}`} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {item.nom_local}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                        {item.nom_lieu}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {item.nb_bureaux}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3">
-                                        <button
-                                            className="text-brand-600 hover:text-brand-900 font-semibold"
-                                            onClick={() => handleOpenModal(item.data)}
-                                        >
-                                            Voir Détails
-                                        </button>
-                                        {(() => {
-                                            const bureau = item.data.bureaux_vote && item.data.bureaux_vote[0];
-                                            const pvPdf = bureau?.resultats_groupes && bureau.resultats_groupes[0]?.pv_pdf;
-                                            const pv = bureau?.resultats_groupes && bureau.resultats_groupes[0]?.pv;
-                                            const pdfUrl = Array.isArray(pvPdf) ? pvPdf[0] : pvPdf;
-
-                                            if (pvPdf) {
-                                                return (
-                                                    <a
-                                                        href={pdfUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-emerald-600 hover:text-emerald-900 font-semibold inline-flex items-center"
-                                                        title="Ouvrir le PV dans le navigateur"
-                                                    >
-                                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                        </svg>
-                                                        Voir PV
-                                                    </a>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Tab Switcher */}
+                <div className="flex bg-gray-100/80 p-1 rounded-xl border border-gray-200 backdrop-blur-sm self-start">
+                    <button
+                        onClick={() => { setActiveTab('bv'); setSortConfig({ key: 'nom_local', direction: 'ascending' }); }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'bv' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <BuildingOfficeIcon className="w-4 h-4" />
+                        Par Bureau
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('localite'); setSortConfig({ key: 'nom_local', direction: 'ascending' }); }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'localite' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <MapPinIcon className="w-4 h-4" />
+                        Par Localité
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('centre'); setSortConfig({ key: 'nom_lieu', direction: 'ascending' }); }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'centre' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <ChartBarIcon className="w-4 h-4" />
+                        Par Centre
+                    </button>
                 </div>
-                {sortedData.length === 0 && !loadingLieuxVote && (
-                    <div className="p-8 text-center text-gray-500">
-                        Aucun lieu de vote trouvé pour ce département.
-                    </div>
-                )}
             </div>
+
+            {isLoading ? (
+                <div className="bg-white rounded-2xl shadow-xl p-12 flex flex-col items-center justify-center border border-gray-100">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-brand-100 border-t-brand-600 rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-8 h-8 bg-brand-50 rounded-full"></div>
+                        </div>
+                    </div>
+                    <p className="mt-6 text-gray-500 font-bold animate-pulse uppercase tracking-widest text-xs">Chargement des données...</p>
+                </div>
+            ) : (
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        {activeTab === 'bv' && (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50/50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_local')}>
+                                            <div className="flex items-center gap-1">Localité <ChevronUpIcon className={`w-3 h-3 ${sortConfig.key === 'nom_local' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
+                                        </th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_lieu')}>
+                                            <div className="flex items-center gap-1">Lieu de Vote <ChevronUpIcon className={`w-3 h-3 ${sortConfig.key === 'nom_lieu' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
+                                        </th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Bureaux</th>
+                                        <th scope="col" className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {sortedData.map((item, index) => (
+                                        <tr key={`${item.id_lieu}-${index}`} className="hover:bg-brand-50/30 transition-all duration-200 group">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.nom_local}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{item.nom_lieu}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-50 text-brand-700 border border-brand-100 shadow-sm">{item.nb_bureaux} BV</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button onClick={() => handleOpenModal(item.data)} className="text-brand-600 hover:text-brand-800 text-sm font-black transition-colors uppercase tracking-tight">Voir Détails</button>
+                                                    {(() => {
+                                                        const bureau = item.data.bureaux_vote && item.data.bureaux_vote[0];
+                                                        const pvPdf = bureau?.resultats_groupes && bureau.resultats_groupes[0]?.pv_pdf;
+                                                        const pdfUrl = Array.isArray(pvPdf) ? pvPdf[0] : pvPdf;
+                                                        return pvPdf ? (
+                                                            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all shadow-sm border border-emerald-100 group-hover:scale-105" title="Voir PV">
+                                                                <BuildingOfficeIcon className="w-4 h-4" />
+                                                            </a>
+                                                        ) : null;
+                                                    })()}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+
+                        {activeTab === 'localite' && (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50/50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Localité</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Pop. Élect.</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Votants</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Participation</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Premier Candidat</th>
+                                        <th scope="col" className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {resultats_locales.map((item, index) => (
+                                        <tr key={item.resultats_generaux.id_local || index} className="hover:bg-blue-50/30 transition-all duration-200">
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-gray-900">{item.resultats_generaux.nom_local}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-medium text-gray-600">{item.resultats_generaux.pop_elect.toLocaleString()}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-medium text-gray-600">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-center">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-sm font-black text-brand-600">{item.resultats_generaux.taux_participation}%</span>
+                                                    <div className="w-16 bg-gray-100 h-1.5 rounded-full mt-1 overflow-hidden border border-gray-200">
+                                                        <div className="bg-brand-500 h-full rounded-full" style={{ width: `${item.resultats_generaux.taux_participation}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap">
+                                                {item.resultats_partis && item.resultats_partis[0] ? (
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-bold text-gray-900 leading-tight">{item.resultats_partis[0].parti_politique}</span>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{item.resultats_partis[0].nbre_voix} Voix</span>
+                                                                <span className="text-[10px] font-black text-gray-400">{item.resultats_partis[0].pourcentage}%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : <span className="text-xs text-gray-400 italic font-medium">Aucun résultat</span>}
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-right">
+                                                <button
+                                                    onClick={() => handleOpenAggregatModal(item, 'localite')}
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-50 text-brand-700 text-xs font-black rounded-lg hover:bg-brand-100 transition-all border border-brand-100 shadow-sm uppercase tracking-tighter"
+                                                >
+                                                    <EyeIcon className="w-3 h-3" />
+                                                    Détails
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+
+                        {activeTab === 'centre' && (
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50/50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Centre de Vote</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Votants</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Participation</th>
+                                        <th scope="col" className="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest"> Gagnant</th>
+                                        <th scope="col" className="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">PDF PV</th>
+                                        <th scope="col" className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-100">
+                                    {resultats_centre.map((item, index) => (
+                                        <tr key={item.resultats_generaux.id_lieu || index} className="hover:bg-purple-50/30 transition-all duration-200">
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-gray-900">{item.resultats_generaux.nom_lieu}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-medium text-gray-600">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-center">
+                                                <span className="text-sm font-black text-purple-600">{item.resultats_generaux.taux_participation}%</span>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap">
+                                                {item.resultats_partis && item.resultats_partis[0] ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-bold text-gray-900">{item.resultats_partis[0].parti_politique}</span>
+                                                        <span className="text-[10px] font-black text-brand-600 uppercase tracking-wide">{item.resultats_partis[0].pourcentage}% des exprimés</span>
+                                                    </div>
+                                                ) : <span className="text-xs text-gray-400 italic">N/A</span>}
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-center">
+                                                <div className="flex justify-center">
+                                                    <button className="p-2 text-gray-400 hover:text-brand-600 transition-colors">
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 whitespace-nowrap text-right">
+                                                <button
+                                                    onClick={() => handleOpenAggregatModal(item, 'centre')}
+                                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-50 text-brand-700 text-xs font-black rounded-lg hover:bg-brand-100 transition-all border border-brand-100 shadow-sm uppercase tracking-tighter"
+                                                >
+                                                    <EyeIcon className="w-3 h-3" />
+                                                    Détails
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                    {sortedData.length === 0 && activeTab === 'bv' && !loadingLieuxVote && (
+                        <div className="p-12 text-center">
+                            <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100 mb-4">
+                                <BuildingOfficeIcon className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <p className="text-gray-500 font-bold">Aucun bureau de vote trouvé pour ce département.</p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <ResultatsLieuModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 lieuData={selectedLieu}
                 partis={partis}
+            />
+            <ResultatsAggregatModal
+                isOpen={isAggregatModalOpen}
+                onClose={handleCloseAggregatModal}
+                data={selectedAggregat}
+                title={aggregatTitle}
             />
         </div>
     );

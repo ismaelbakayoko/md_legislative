@@ -392,16 +392,16 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 items-center">
+        <div className="flex flex-col lg:flex-row gap-2 items-center">
             {/* Diagramme circulaire à gauche */}
-            <div className="w-full lg:w-5/12 flex justify-center">
+            <div className="w-full lg:w-6/12 flex justify-center">
                 <div className="w-full max-w-xs">
                     <Pie data={data} options={options} />
                 </div>
             </div>
 
             {/* Légende personnalisée à droite */}
-            <div className="w-full lg:w-7/12">
+            <div className="w-full lg:w-6/12">
                 <div className="space-y-2">
                     {candidates.map((candidate, index) => {
                         const color = getColor(candidate.parti, index);
@@ -421,33 +421,47 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
 
                                 {/* Informations du candidat */}
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-baseline justify-between gap-2">
-                                        <p className="font-bold text-gray-900 text-xs truncate">
+                                    <div className="flex items-center gap-2 w-full">
+                                        {/* Nom du candidat : toujours visible en entier */}
+                                        <p className="font-bold text-gray-900 text-xs whitespace-nowrap">
                                             {candidate.nom_prenoms || candidate.nom}
                                         </p>
-                                        <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
+
+                                        {/* Parti : prend l’espace restant et tronque */}
+                                        <span className="ml-auto max-w-[45%] text-[11px] font-semibold text-gray-600 
+                   bg-gray-100 px-2 py-0.5 rounded truncate text-right">
                                             {candidate.parti}
                                         </span>
                                     </div>
+
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-[10px] font-bold text-gray-600">
+                                        <span className="text-[10px] font-bold text-gray-600 whitespace-nowrap">
                                             {candidate.voix.toLocaleString()} voix
                                         </span>
-                                        <div className="flex items-center gap-1">
-                                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden min-w-[50px]">
+
+                                        {/* CONTENEUR FLEX */}
+                                        <div className="flex items-center gap-1 flex-1 min-w-0">
+
+                                            {/* BARRE */}
+                                            <div className="flex-1 min-w-0 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
                                                     style={{
                                                         width: `${percentage}%`,
-                                                        backgroundColor: color
+                                                        backgroundColor: color,
                                                     }}
-                                                ></div>
+                                                />
                                             </div>
-                                            <span className="text-[10px] font-extrabold" style={{ color: color }}>
+
+                                            <span
+                                                className="text-[10px] font-extrabold whitespace-nowrap"
+                                                style={{ color: color }}
+                                            >
                                                 {percentage}%
                                             </span>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         );
