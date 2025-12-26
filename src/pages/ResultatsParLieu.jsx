@@ -81,6 +81,12 @@ const ResultatsParLieu = () => {
                 if (local.lieux_vote) {
                     local.lieux_vote.forEach(lieu => {
                         if (lieu.bureaux_vote && lieu.bureaux_vote.length > 0) {
+                            // Compter les bureaux qui ont des données
+                            const nb_bureaux_complets = lieu.bureaux_vote.filter(bv =>
+                                (bv.resultats_groupes && bv.resultats_groupes.length > 0) ||
+                                (bv.resultats_bv && bv.resultats_bv.length > 0)
+                            ).length;
+
                             flatList.push({
                                 id_local: local.id_local,
                                 nom_local: local.nom_local,
@@ -89,6 +95,7 @@ const ResultatsParLieu = () => {
                                 id_bv: lieu.bureaux_vote[0].id_bv,
                                 nom_lieu: lieu.nom_lieu,
                                 nb_bureaux: lieu.bureaux_vote.length,
+                                nb_bureaux_complets,
                                 data: lieu
                             });
                         }
@@ -98,6 +105,9 @@ const ResultatsParLieu = () => {
             setSortedData(flatList);
         }
     }, [lieuxVoteByDepartement, activeTab]);
+
+    const totalBureaux = sortedData.reduce((acc, item) => acc + item.nb_bureaux, 0);
+    const totalBureauxComplets = sortedData.reduce((acc, item) => acc + item.nb_bureaux_complets, 0);
 
     const requestSort = (key) => {
         let direction = 'ascending';
@@ -216,7 +226,7 @@ const ResultatsParLieu = () => {
                                         <th scope="col" className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] cursor-pointer hover:text-brand-600 transition-colors" onClick={() => requestSort('nom_lieu')}>
                                             <div className="flex items-center gap-1.5">Lieu de Vote <ChevronUpIcon className={`w-3.5 h-3.5 ${sortConfig.key === 'nom_lieu' ? (sortConfig.direction === 'ascending' ? '' : 'rotate-180') : 'opacity-0'}`} /></div>
                                         </th>
-                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Bureaux</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Bureaux ({totalBureaux})</th>
                                         <th scope="col" className="px-6 py-5 text-right text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Actions</th>
                                     </tr>
                                 </thead>
@@ -226,7 +236,16 @@ const ResultatsParLieu = () => {
                                             <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.nom_local}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700 font-bold">{item.nom_lieu}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-center">
-                                                <span className="px-4 py-1.5 rounded-xl text-xs font-black bg-brand-50 text-brand-700 border border-brand-100 shadow-sm leading-none tabular-nums">{item.nb_bureaux} BV</span>
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold shadow-sm leading-none tabular-nums border uppercase tracking-wider ${item.nb_bureaux_complets === item.nb_bureaux ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : (item.nb_bureaux_complets > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-red-50 text-red-700 border-red-100')}`}>
+                                                        {item.nb_bureaux_complets}/{item.nb_bureaux} BV
+                                                    </span>
+                                                    {item.nb_bureaux_complets < item.nb_bureaux && (
+                                                        <span className={`text-[9px] font-bold uppercase tracking-tight ${item.nb_bureaux_complets > 0 ? 'text-amber-500' : 'text-red-500 animate-pulse'}`}>
+                                                            {item.nb_bureaux_complets > 0 ? 'Incomplet' : 'Aucune donnée'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <div className="flex items-center justify-end gap-3">
