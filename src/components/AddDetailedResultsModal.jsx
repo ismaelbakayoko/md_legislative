@@ -29,10 +29,7 @@ const AddDetailedResultsModal = ({ isOpen, onClose, bureauData }) => {
             onClose();
             dispatch(resetAddSuccess());
         }
-        if (error) {
-            toast.error(`Erreur : ${error}`);
-        }
-    }, [addSuccess, error, onClose, dispatch]);
+    }, [addSuccess, onClose, dispatch]);
 
     useEffect(() => {
         // Initialize results object for each party

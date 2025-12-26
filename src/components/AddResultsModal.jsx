@@ -66,10 +66,7 @@ const AddResultsModal = ({ isOpen, onClose, bureauData }) => {
             });
             setPdfFiles([]);
         }
-        if (error) {
-            toast.error(`Erreur : ${error}`);
-        }
-    }, [addSuccess, error, onClose, dispatch]);
+    }, [addSuccess, onClose, dispatch]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
