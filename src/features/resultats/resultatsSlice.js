@@ -344,8 +344,10 @@ const resultatsSlice = createSlice({
                 state.error = action.payload;
             })
             // Fetch Resultats Locales Centres
-            .addCase(fetchResultatsLocalesCentres.pending, (state) => {
-                state.loadingLocalesCentres = true;
+            .addCase(fetchResultatsLocalesCentres.pending, (state, action) => {
+                if (!action.meta.arg?.isSilent) {
+                    state.loadingLocalesCentres = true;
+                }
                 state.error = null;
             })
             .addCase(fetchResultatsLocalesCentres.fulfilled, (state, action) => {

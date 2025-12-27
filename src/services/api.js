@@ -7,7 +7,6 @@ const API_BASE_URL = config.API_URL;
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -27,6 +26,7 @@ api.interceptors.request.use(
     },
     (error) => Promise.reject(error)
 );
+
 api.interceptors.response.use(
     (response) => {
         // Certains endpoints renvoient 200 OK mais avec { success: false, message: "..." }
@@ -39,15 +39,24 @@ api.interceptors.response.use(
     (error) => {
         // Log l'erreur pour le débogage
         const errorData = error.response?.data;
-        console.error('API Error:', errorData || error.message);
+        const contentType = error.response?.headers?.['content-type'] || '';
+
+        if (contentType.includes('text/html')) {
+            console.error('API Error: Received HTML instead of JSON. This usually indicates a 404, proxy error, or tunnel landing page.');
+        } else {
+            console.error('API Error:', errorData || error.message);
+        }
 
         // Afficher le message d'erreur dans une notification
         let errorMessage = "Une erreur est survenue lors de la communication avec le serveur.";
 
         if (error.response) {
             // Le serveur a répondu avec un code d'erreur (4xx, 5xx)
-            // On essaie d'extraire le message le plus pertinent
-            errorMessage = errorData?.message || errorData?.error || (typeof errorData === 'string' ? errorData : null) || `Erreur: ${error.response.status}`;
+            if (contentType.includes('text/html')) {
+                errorMessage = "Erreur du serveur (Réponse HTML inattendue). Veuillez vérifier l'URL de l'API.";
+            } else {
+                errorMessage = errorData?.message || errorData?.error || (typeof errorData === 'string' ? errorData : null) || `Erreur: ${error.response.status}`;
+            }
         } else if (error.request) {
             // La requête a été faite mais aucune réponse n'a été reçue
             errorMessage = "Impossible de contacter le serveur. Veuillez vérifier votre connexion.";
@@ -57,12 +66,11 @@ api.interceptors.response.use(
         }
 
         // Ne pas afficher de toast pour les erreurs 401 car elles sont gérées par la redirection
-        // ou si c'est une erreur de "No token" qui arrive lors du check de statut
         if (error.response?.status !== 401 && errorMessage !== 'No token') {
             toast.error(errorMessage);
         }
 
-        // Si le serveur renvoie 401 (Non autorisé), cela signifie que le token est expiré ou invalide
+        // Si le serveur renvoie 401 (Non autorisé)
         if (error.response && error.response.status === 401) {
             console.warn('Session expirée ou Token invalide. Redirection vers la page de connexion...');
 

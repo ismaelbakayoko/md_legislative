@@ -58,7 +58,7 @@ const CandidatDetail = () => {
         return null;
     }, [partis, id, selectedDepartement, selectedCirconscription, passedCandidat]);
 
-    // 2. Fetch Data if missing
+    // 2. Fetch Data if missing and setup polling
     useEffect(() => {
         // If we don't have candidates list, try to fetch it (requires settings)
         if ((!partis || partis.length === 0) && elections.length > 0 && selectedCirconscription) {
@@ -71,14 +71,19 @@ const CandidatDetail = () => {
         }
 
         // Fetch detailed results (we need department name)
-        // Only fetch if not already loaded or if department changed (simple check on array length/content)
-        // Using selectedDepartement is safest here
         if (selectedDepartement && Object.keys(resultsByCandidate).length === 0) {
             dispatch(getLieuxVoteByDepartement(selectedDepartement.nom_departement));
-        } else if (candidateInfo && !lieuxVoteByDepartement.length) {
-            // Fallback if we have candidate but no results yet (and maybe selectedDepartement is missing but candidateInfo has it?)
-            // unlikely given candidateInfo depends on store which depends on persistence
         }
+
+        // Setup polling every 30 seconds
+        const pollingInterval = setInterval(() => {
+            console.log("🔄 [Polling] Mise à jour automatique des détails candidat (30s)...");
+            if (selectedDepartement) {
+                dispatch(getLieuxVoteByDepartement({ nom_departement: selectedDepartement.nom_departement, isSilent: true }));
+            }
+        }, 30000);
+
+        return () => clearInterval(pollingInterval);
     }, [dispatch, partis.length, elections, selectedCirconscription, selectedDepartement, resultsByCandidate]);
 
     // 3. Derived Results from Real Data

@@ -66,11 +66,15 @@ const authSlice = createSlice({
             state.user = null;
             state.token = null;
             state.isAuthenticated = false;
+            state.error = null;
             // Clear all relevant localStorage items
             localStorage.removeItem('token');
             localStorage.removeItem('selectedRegion');
             localStorage.removeItem('selectedDepartement');
             localStorage.removeItem('selectedCirconscription');
+        },
+        clearError: (state) => {
+            state.error = null;
         },
     },
     extraReducers: (builder) => {
@@ -121,7 +125,7 @@ const authSlice = createSlice({
     },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, clearError } = authSlice.actions;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectAuthUser = (state) => state.auth.user;
 export const selectAuthLoading = (state) => state.auth.loading;

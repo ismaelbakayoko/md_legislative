@@ -31,6 +31,14 @@
     animation: fadeIn 0.4s ease-out forwards;
   }
 
+  .animate-update {
+    animation: updatePulse 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .shadow-glow {
+    text-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -40,6 +48,22 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes updatePulse {
+    0% {
+      transform: scale(1);
+    }
+
+    30% {
+      transform: scale(1.02);
+      background-color: rgba(249, 115, 22, 0.1);
+    }
+
+    100% {
+      transform: scale(1);
+      background-color: white;
     }
   }
 }

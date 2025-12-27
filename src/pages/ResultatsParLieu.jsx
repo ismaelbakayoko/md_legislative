@@ -73,6 +73,30 @@ const ResultatsParLieu = () => {
 
     const { isConnected } = useCustomWebSocket(handleWebSocketMessage);
 
+    // ============================================
+    // Polling Mechanism - Fallback (30 seconds)
+    // ============================================
+    useEffect(() => {
+        const pollingInterval = setInterval(() => {
+            console.log("🔄 [Polling] Mise à jour automatique des bureaux de vote (30s)...");
+
+            if (selectedDepartement?.nom_departement) {
+                dispatch(getLieuxVoteByDepartement({ nom_departement: selectedDepartement.nom_departement, isSilent: true }));
+            }
+            if (elections.length > 0 && selectedDepartement) {
+                const currentElection = elections[0];
+                dispatch(fetchResultatsLocalesCentres({
+                    id_election: currentElection.id_election,
+                    nom_departement: selectedDepartement.nom_departement,
+                    nb_tour: 1,
+                    isSilent: true
+                }));
+            }
+        }, 30000); // 30 secondes
+
+        return () => clearInterval(pollingInterval);
+    }, [dispatch, selectedDepartement, elections]);
+
     // Transformation des données pour le tableau BV
     useEffect(() => {
         if (activeTab === 'bv' && lieuxVoteByDepartement && lieuxVoteByDepartement.length > 0) {

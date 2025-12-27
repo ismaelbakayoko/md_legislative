@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { getLieuxVoteByDepartement } from '../features/resultats/resultatsSlice';
 import { ChevronLeftIcon } from '@heroicons/react/24/solid';
 import Loader from '../components/Loader';
 
 const ResultatsLocalite = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const { localData, nom_departement } = location.state || {};
 
     const { lieuxVoteByDepartement, loadingLieuxVote } = useSelector((state) => state.resultats);
     const { partis } = useSelector((state) => state.candidats);
+    const { selectedDepartement } = useSelector((state) => state.settings);
 
     const [resultsData, setResultsData] = useState([]);
     const [totalVoix, setTotalVoix] = useState(0);
@@ -54,6 +57,21 @@ const ResultatsLocalite = () => {
             }
         }
     }, [localData, lieuxVoteByDepartement]);
+
+    // Polling Mechanism - Fallback (30 seconds)
+    useEffect(() => {
+        const pollingInterval = setInterval(() => {
+            console.log("🔄 [Polling] Mise à jour automatique de la localité (30s)...");
+            if (nom_departement || selectedDepartement?.nom_departement) {
+                dispatch(getLieuxVoteByDepartement({
+                    nom_departement: nom_departement || selectedDepartement.nom_departement,
+                    isSilent: true
+                }));
+            }
+        }, 30000);
+
+        return () => clearInterval(pollingInterval);
+    }, [dispatch, nom_departement, selectedDepartement]);
 
     const goBack = () => {
         navigate(-1);
@@ -131,9 +149,9 @@ const ResultatsLocalite = () => {
                                                 {/* Rang */}
                                                 <div className="flex-shrink-0">
                                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${index === 0 ? 'bg-yellow-500' :
-                                                            index === 1 ? 'bg-gray-400' :
-                                                                index === 2 ? 'bg-orange-600' :
-                                                                    'bg-gray-300'
+                                                        index === 1 ? 'bg-gray-400' :
+                                                            index === 2 ? 'bg-orange-600' :
+                                                                'bg-gray-300'
                                                         }`}>
                                                         {index + 1}
                                                     </div>

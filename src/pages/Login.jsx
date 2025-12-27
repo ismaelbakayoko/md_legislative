@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser, selectAuthLoading, selectIsAuthenticated } from '../features/auth/authSlice';
+import { loginUser, selectAuthLoading, selectIsAuthenticated, clearError } from '../features/auth/authSlice';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -11,6 +11,10 @@ const Login = () => {
     const loading = useSelector(selectAuthLoading);
     const isAuthenticated = useSelector(selectIsAuthenticated);
     const error = useSelector((state) => state.auth.error);
+
+    useEffect(() => {
+        dispatch(clearError());
+    }, [dispatch]);
 
     useEffect(() => {
         if (isAuthenticated) {

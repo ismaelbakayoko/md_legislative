@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -49,6 +49,8 @@ const PARTY_COLORS = {
     'EXG': '#be123c',     // Rose profond
     'EXD': '#0369a1',     // Cyan foncé
     'DSV': '#059669',     // Vert foncé
+    'NULS': '#94a3b8',    // Ardoise (Slate) pour les nuls
+    'BLANCS': '#e2e8f0',  // Gris très clair pour les blancs
 };
 
 // Palette de couleurs de secours vibrantes pour les partis non listés
@@ -319,6 +321,78 @@ export const ResultPieChart = ({ candidates }) => {
     return <Pie data={data} options={options} />;
 };
 
+const LegendItem = ({ candidate, index, color, totalVoix }) => {
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [prevVoix, setPrevVoix] = useState(candidate.voix);
+
+    useEffect(() => {
+        if (candidate.voix !== prevVoix) {
+            setIsUpdating(true);
+            setPrevVoix(candidate.voix);
+            const timer = setTimeout(() => setIsUpdating(false), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [candidate.voix, prevVoix]);
+
+    const percentage = candidate.pourcentage || (totalVoix > 0 ? ((candidate.voix / totalVoix) * 100).toFixed(2) : '0.00');
+
+    return (
+        <div
+            className={`group flex items-center gap-3 p-2.5 rounded-lg bg-white/50 hover:bg-white border border-gray-200/50 hover:border-gray-300 hover:shadow-md transition-all duration-500 ${isUpdating ? 'animate-update' : ''}`}
+        >
+            {/* Indicateur de couleur */}
+            <div
+                className="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm group-hover:scale-125 transition-transform duration-300"
+                style={{ backgroundColor: color }}
+            ></div>
+
+            {/* Informations du candidat */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 w-full">
+                    {/* Nom du candidat */}
+                    <p className="font-bold text-gray-900 text-lg whitespace-nowrap">
+                        {candidate.nom_prenoms || candidate.nom}
+                    </p>
+
+                    {/* Parti */}
+                    <span className="ml-auto max-w-[45%] text-[14px] font-semibold text-gray-600 
+               bg-gray-100 px-2 py-0.5 rounded truncate text-right">
+                        {candidate.parti}
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[18px] font-bold transition-all duration-500 ${isUpdating ? 'text-brand-600 scale-110 shadow-glow' : 'text-gray-600'} whitespace-nowrap`}>
+                        {candidate.voix.toLocaleString()} voix
+                    </span>
+
+                    {/* CONTENEUR FLEX */}
+                    <div className="flex items-center gap-1 flex-1 min-w-0">
+
+                        {/* BARRE */}
+                        <div className="flex-1 min-w-0 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
+                                style={{
+                                    width: `${percentage}%`,
+                                    backgroundColor: color,
+                                }}
+                            />
+                        </div>
+
+                        <span
+                            className={`text-[18px] font-extrabold whitespace-nowrap transition-all duration-500 ${isUpdating ? 'scale-110 shadow-glow' : ''}`}
+                            style={{ color: color }}
+                        >
+                            {percentage}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Version personnalisée avec légende à droite
 export const ResultPieChartWithCustomLegend = ({ candidates }) => {
     const data = {
@@ -343,7 +417,7 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
         aspectRatio: 1,
         plugins: {
             legend: {
-                display: false, // On cache la légende par défaut
+                display: false,
             },
             title: {
                 display: false,
@@ -366,14 +440,11 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
                     label: function (context) {
                         const candidate = candidates[context.dataIndex];
                         const voix = context.parsed.toLocaleString();
-                        const pourcentage = candidate.pourcentage || '0.00';
-                        const total = candidates.reduce((sum, c) => sum + c.voix, 0);
-                        const partTotal = ((context.parsed / total) * 100).toFixed(2);
+                        const dataPourcentage = candidate.pourcentage || '0.00';
 
                         return [
                             `Voix: ${voix}`,
-                            `Pourcentage: ${pourcentage}%`,
-                            `Part du total: ${partTotal}%`
+                            `Pourcentage: ${dataPourcentage}%`
                         ];
                     }
                 }
@@ -403,69 +474,15 @@ export const ResultPieChartWithCustomLegend = ({ candidates }) => {
             {/* Légende personnalisée à droite */}
             <div className="w-full lg:w-6/12">
                 <div className="space-y-2">
-                    {candidates.map((candidate, index) => {
-                        const color = getColor(candidate.parti, index);
-                        const totalVoix = candidates.reduce((sum, c) => sum + c.voix, 0);
-                        const percentage = totalVoix > 0 ? ((candidate.voix / totalVoix) * 100).toFixed(2) : '0.00';
-
-                        return (
-                            <div
-                                key={index}
-                                className="group flex items-center gap-3 p-2.5 rounded-lg bg-white/50 hover:bg-white border border-gray-200/50 hover:border-gray-300 hover:shadow-md transition-all duration-300"
-                            >
-                                {/* Indicateur de couleur */}
-                                <div
-                                    className="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm group-hover:scale-125 transition-transform duration-300"
-                                    style={{ backgroundColor: color }}
-                                ></div>
-
-                                {/* Informations du candidat */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 w-full">
-                                        {/* Nom du candidat : toujours visible en entier */}
-                                        <p className="font-bold text-gray-900 text-lg whitespace-nowrap">
-                                            {candidate.nom_prenoms || candidate.nom}
-                                        </p>
-
-                                        {/* Parti : prend l’espace restant et tronque */}
-                                        <span className="ml-auto max-w-[45%] text-[14px] font-semibold text-gray-600 
-                   bg-gray-100 px-2 py-0.5 rounded truncate text-right">
-                                            {candidate.parti}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-[18px] font-bold text-gray-600 whitespace-nowrap">
-                                            {candidate.voix.toLocaleString()} voix
-                                        </span>
-
-                                        {/* CONTENEUR FLEX */}
-                                        <div className="flex items-center gap-1 flex-1 min-w-0">
-
-                                            {/* BARRE */}
-                                            <div className="flex-1 min-w-0 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
-                                                    style={{
-                                                        width: `${percentage}%`,
-                                                        backgroundColor: color,
-                                                    }}
-                                                />
-                                            </div>
-
-                                            <span
-                                                className="text-[18px] font-extrabold whitespace-nowrap"
-                                                style={{ color: color }}
-                                            >
-                                                {percentage}%
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                        );
-                    })}
+                    {candidates.map((candidate, index) => (
+                        <LegendItem
+                            key={index}
+                            candidate={candidate}
+                            index={index}
+                            color={getColor(candidate.parti, index)}
+                            totalVoix={candidates.reduce((sum, c) => sum + c.voix, 0)}
+                        />
+                    ))}
                 </div>
             </div>
         </div>

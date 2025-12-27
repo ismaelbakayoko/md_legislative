@@ -1,13 +1,13 @@
 import React, { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchResultatsByDepartement, fetchTotauxCirconscription, getLieuxVoteByDepartement, clearAllData } from '../features/resultats/resultatsSlice';
+import { fetchResultatsByDepartement, fetchTotauxCirconscription, getLieuxVoteByDepartement, clearAllData, fetchResultatsLocalesCentres } from '../features/resultats/resultatsSlice';
 import { fetchDepartements } from '../features/departements/departementsSlice';
 import { selectResultatsLoading } from '../features/resultats/selectors';
 import Loader from '../components/Loader';
 import StatCard from '../components/StatCard';
 import ResultTable from '../components/ResultTable';
-import { ResultBarChart, ResultPieChart, ResultPieChartWithCustomLegend } from '../components/Charts';
+import { ResultPieChartWithCustomLegend } from '../components/Charts';
 import { fetchCandidatesInfo, clearCandidates } from '../features/candidats/candidatsSlice';
 import CandidatesList from '../components/CandidatesList';
 import useCustomWebSocket from '../hooks/useCustomWebSocket';
@@ -82,7 +82,7 @@ const ResultatsDepartement = () => {
         console.log(`[WebSocket] 📩 Événement: ${eventType}`, data);
 
         switch (eventType) {
-            case 'resultats_bv':
+            case 'UPDATE_RESULTATS_GROUPES':
             case 'INSERT_RESULTATS_GROUPES':
                 console.log("🔄 Mise à jour silencieuse des résultats...");
 
@@ -99,18 +99,36 @@ const ResultatsDepartement = () => {
                         annee: new Date().getFullYear().toString(),
                         isSilent: true
                     };
+                    const params2 = {
+                        nom_departement: selectedDepartement?.nom_departement,
+                        id_election: currentElection.id_election,
+                        nb_tour: 1,
+                        isSilent: true
+                    };
 
                     dispatch(fetchTotauxCirconscription(params));
                     dispatch(fetchCandidatesInfo(params));
+                    dispatch(fetchResultatsLocalesCentres(params2));
                 }
                 break;
 
-            case 'resultats_groupes':
+            case 'UPDATE_RESULTATS_BV':
             case 'INSERT_RESULTATS_BV':
                 console.log("🔄 Mise à jour silencieuse des résultats groupés...");
 
                 if (selectedDepartement?.nom_departement) {
                     dispatch(getLieuxVoteByDepartement({ nom_departement: selectedDepartement.nom_departement, isSilent: true }));
+
+                    if (elections.length > 0) {
+                        const currentAppElection = elections[0];
+                        const params2 = {
+                            nom_departement: selectedDepartement?.nom_departement,
+                            id_election: currentAppElection.id_election,
+                            nb_tour: 1,
+                            isSilent: true
+                        };
+                        dispatch(fetchResultatsLocalesCentres(params2));
+                    }
                 }
 
                 if (elections.length > 0 && selectedCirconscription) {
@@ -154,30 +172,110 @@ const ResultatsDepartement = () => {
     // Utiliser le hook WebSocket personnalisé
     const { isConnected, connectionStatus } = useCustomWebSocket(handleWebSocketMessage);
 
+    // ============================================
+    // Polling Mechanism - Fallback (30 seconds)
+    // ============================================
+    useEffect(() => {
+        const pollingInterval = setInterval(() => {
+            console.log("🔄 [Polling] Mise à jour automatique des données (30s)...");
+
+            // Re-use logic similar to WebSocket updates
+            if (effectiveId) {
+                dispatch(fetchResultatsByDepartement({ id: effectiveId, isSilent: true }));
+            }
+
+            if (elections.length > 0 && selectedCirconscription) {
+                const currentElection = elections[0];
+                const params = {
+                    id_election: currentElection.id_election,
+                    id_cir: selectedCirconscription.id_cir,
+                    nb_tour: 1,
+                    annee: new Date().getFullYear().toString(),
+                    isSilent: true
+                };
+                const params2 = {
+                    nom_departement: selectedDepartement?.nom_departement,
+                    id_election: currentElection.id_election,
+                    nb_tour: 1,
+                    isSilent: true
+                };
+
+                dispatch(fetchTotauxCirconscription(params));
+                dispatch(fetchCandidatesInfo(params));
+                dispatch(fetchResultatsLocalesCentres(params2));
+            }
+        }, 15000); // 15 secondes
+
+        return () => clearInterval(pollingInterval);
+    }, [dispatch, effectiveId, elections, selectedCirconscription, selectedDepartement]);
+
     // Transform totaux_par_parti data for charts
     const chartData = React.useMemo(() => {
+        let data = [];
+        const bNuls = totaux_globaux?.bulletins_nuls || 0;
+        const bBlancs = totaux_globaux?.bulletins_blancs || 0;
+        const bExprimes = totaux_globaux?.bulletins_exprimes || 0;
+
+        // La base pour le diagramme (qui exclut les nuls) est la somme des exprimés et des blancs
+        const totalBaseChart = bExprimes + bBlancs;
+
         if (totaux_par_parti && totaux_par_parti.length > 0) {
-            return totaux_par_parti.map(item => {
-                const titulaire = item.parti_politique.candidats?.find(c => c.statut_cand === 'Titulaire') || item.parti_politique.candidats?.[0];
-                const nomComplet = titulaire ? titulaire.nom_prenoms : item.parti_politique.nom_parti;
+            // Calculer la somme réelle des voix des partis pour une base 100% exacte
+            const sumVoixPartis = totaux_par_parti.reduce((sum, item) => sum + (item.total_voix || 0), 0);
+            const totalBaseChart = sumVoixPartis + bBlancs;
+
+            data = totaux_par_parti.map((item, index) => {
+                const titulaire = item.parti_politique?.candidats?.find(c => c.statut_cand === 'Titulaire') || item.parti_politique?.candidats?.[0];
+                const nomComplet = titulaire ? titulaire.nom_prenoms : item.parti_politique?.nom_parti;
+
+                // Calcul du pourcentage sur la base réelle (Somme des voix partis + Blancs)
+                const calculPourcentage = (totalBaseChart > 0) ? ((item.total_voix / totalBaseChart) * 100).toFixed(2) : "0.00";
 
                 return {
-                    id: item.parti_politique.id_parti,
+                    id: item.parti_politique?.id_parti || index,
                     nom: nomComplet,
                     prenom: '',
-                    nom_prenoms: nomComplet, // For Pie Chart
-                    parti: item.parti_politique.sigle || item.parti_politique.nom_parti, // For badges and colors
-                    logo: item.parti_politique.logo_url,
-                    candidats: item.parti_politique.candidats,
-                    voix: item.total_voix,
-                    pourcentage: totaux_globaux.bulletins_exprimes > 0
-                        ? ((item.total_voix / totaux_globaux.bulletins_exprimes) * 100).toFixed(2)
-                        : 0
+                    nom_prenoms: nomComplet,
+                    parti: item.parti_politique?.sigle || item.parti_politique?.nom_parti || 'IND',
+                    logo: item.parti_politique?.logo_url,
+                    candidats: item.parti_politique?.candidats || [],
+                    voix: item.total_voix || 0,
+                    pourcentage: calculPourcentage
                 };
-            }).sort((a, b) => b.voix - a.voix);
+            });
+
+            // Somme des pourcentages des candidats pour calculer le reliquat
+            const sumPartisPourcentage = data.reduce((sum, item) => sum + parseFloat(item.pourcentage), 0);
+
+            // Calculer les bulletins blancs : le reliquat pour arriver à exactement 100.00 %
+            const bBlancsPourcentage = Math.max(0, 100 - sumPartisPourcentage);
+
+            data.push({
+                id: 'blancs',
+                nom: 'Bulletins Blancs',
+                nom_prenoms: 'Bulletins Blancs',
+                parti: 'BLANCS',
+                logo: null,
+                candidats: [],
+                voix: bBlancs,
+                pourcentage: bBlancsPourcentage.toFixed(2)
+            });
+
+            // Ajouter les nuls (0% car exclus du diagramme principal)
+            data.push({
+                id: 'nuls',
+                nom: 'Bulletins Nuls',
+                nom_prenoms: 'Bulletins Nuls',
+                parti: 'NULS',
+                logo: null,
+                candidats: [],
+                voix: bNuls,
+                pourcentage: "0.00"
+            });
+
         } else if (partis && partis.length > 0) {
-            // Fallback: Show candidates with 0 results if no totals available
-            return partis.map(parti => {
+            // Fallback: Show candidates with 0 results
+            data = partis.map(parti => {
                 const titulaire = parti.candidats?.find(c => c.statut_cand === 'Titulaire') || parti.candidats?.[0];
                 const nomComplet = titulaire ? titulaire.nom_prenoms : parti.nom_parti;
 
@@ -190,12 +288,34 @@ const ResultatsDepartement = () => {
                     logo: parti.logo_url,
                     candidats: parti.candidats,
                     voix: 0,
-                    pourcentage: 0
+                    pourcentage: "0.00"
                 };
+            });
+
+            // Ajouter nuls et blancs même s'il n'y a pas encore de voix pour les partis
+            data.push({
+                id: 'nuls',
+                nom: 'Bulletins Nuls',
+                nom_prenoms: 'Bulletins Nuls',
+                parti: 'NULS',
+                logo: null,
+                candidats: [],
+                voix: bNuls,
+                pourcentage: (bNuls + bBlancs > 0) ? ((bNuls / (bNuls + bBlancs)) * 100).toFixed(2) : "0.00"
+            });
+            data.push({
+                id: 'blancs',
+                nom: 'Bulletins Blancs',
+                nom_prenoms: 'Bulletins Blancs',
+                parti: 'BLANCS',
+                logo: null,
+                candidats: [],
+                voix: bBlancs,
+                pourcentage: (bNuls + bBlancs > 0) ? ((bBlancs / (bNuls + bBlancs)) * 100).toFixed(2) : "0.00"
             });
         }
 
-        return [];
+        return data.sort((a, b) => b.voix - a.voix);
     }, [totaux_par_parti, totaux_globaux, partis]);
 
     const handleManualRefresh = () => {
@@ -224,7 +344,7 @@ const ResultatsDepartement = () => {
                 <div>
                     <div className="flex items-center gap-3">
                         <h3 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-                            {selectedCirconscription.code_cir + '-' + selectedCirconscription?.circonscription}
+                            {selectedCirconscription ? `${selectedCirconscription.code_cir || ''} - ${selectedCirconscription.circonscription || ''}` : 'Circonscription non sélectionnée'}
                         </h3>
                         {/* Indicateur de connexion WebSocket */}
                         <div className={`flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-500 ${isConnected
@@ -275,98 +395,77 @@ const ResultatsDepartement = () => {
                         </svg>
                         Statistiques Globales
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                        <div className="bg-white border-l-4 border-blue-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Population Électorale</p>
-                                    <p className="text-xl font-extrabold text-blue-900 mt-1">{(selectedCirconscription?.pop_elect || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-blue-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <StatCard
+                            title="Population Électorale"
+                            value={selectedCirconscription?.pop_elect || 0}
+                            color="blue"
+                            icon={(
+                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            )}
+                        />
 
-                        <div className="bg-white border-l-4 border-purple-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Astreintes</p>
-                                    <p className="text-xl font-extrabold text-purple-900 mt-1">{(totaux_globaux?.pers_astreint || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-purple-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                        <StatCard
+                            title="Astreintes"
+                            value={totaux_globaux?.pers_astreint || 0}
+                            color="purple"
+                            icon={(
+                                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            )}
+                        />
 
-                        <div className="bg-white border-l-4 border-emerald-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Votants</p>
-                                    <p className="text-xl font-extrabold text-emerald-900 mt-1">{(totaux_globaux?.nbre_votants || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-emerald-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                        <StatCard
+                            title="Votants"
+                            value={totaux_globaux?.nbre_votants || 0}
+                            color="emerald"
+                            icon={(
+                                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            )}
+                        />
 
-                        <div className="bg-white border-l-4 border-rose-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Nuls</p>
-                                    <p className="text-xl font-extrabold text-rose-900 mt-1">{(totaux_globaux?.bulletins_nuls || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-rose-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                        <StatCard
+                            title="Nuls"
+                            value={totaux_globaux?.bulletins_nuls || 0}
+                            color="rose"
+                            icon={(
+                                <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            )}
+                        />
 
-                        <div className="bg-white border-l-4 border-indigo-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Exprimés</p>
-                                    <p className="text-xl font-extrabold text-indigo-900 mt-1">{(totaux_globaux?.bulletins_exprimes || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-indigo-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                        <StatCard
+                            title="Exprimés"
+                            value={totaux_globaux?.bulletins_exprimes || 0}
+                            color="indigo"
+                            icon={(
+                                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                            )}
+                        />
 
-                        <div className="bg-white border-l-4 border-slate-500 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Blancs</p>
-                                    <p className="text-xl font-extrabold text-slate-900 mt-1">{(totaux_globaux?.bulletins_blancs || 0).toLocaleString()}</p>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg p-1.5">
-                                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-
+                        <StatCard
+                            title="Blancs"
+                            value={totaux_globaux?.bulletins_blancs || 0}
+                            color="slate"
+                            icon={(
+                                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            )}
+                        />
                     </div>
                 </div>
             )}
 
             {/* Candidates List */}
-
             <CandidatesList partis={partis} />
 
             {/* Charts */}
@@ -400,12 +499,17 @@ const ResultatsDepartement = () => {
                             <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-4"></div>
 
                             {/* Chart with custom legend - Diagram left, Legend right */}
-                            <ResultPieChartWithCustomLegend candidates={chartData.slice(0, 8)} />
+                            <ResultPieChartWithCustomLegend
+                                candidates={[
+                                    ...chartData.filter(c => c.id !== 'nuls' && c.id !== 'blancs').slice(0, 8),
+                                    ...chartData.filter(c => c.id === 'blancs')
+                                ].sort((a, b) => b.voix - a.voix)}
+                            />
                         </div>
                     </div>
                 </div>
             )}
-            {/* Table */}
+
             {/* Table */}
             {chartData.length > 0 && (
                 <div className="bg-white rounded-lg shadow-md border border-gray-100 p-4">
@@ -439,35 +543,3 @@ const ResultatsDepartement = () => {
 };
 
 export default ResultatsDepartement;
-
-
-
-//  {/* Bar Chart Card */}
-//                     <div className="group relative overflow-hidden bg-gradient-to-br from-white via-white to-blue-50/30 p-6 rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-2xl hover:scale-[1.02] transition-all duration-500 ease-out">
-//                         {/* Decorative gradient overlay */}
-//                         <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-//                         {/* Subtle animated background pattern */}
-//                         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-brand-400/10 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-
-//                         <div className="relative z-10">
-//                             <div className="flex items-center justify-between mb-5">
-//                                 <h3 className="text-xl font-extrabold bg-gradient-to-r from-gray-900 via-gray-800 to-brand-600 bg-clip-text text-transparent flex items-center">
-//                                     <div className="bg-gradient-to-br from-brand-500 to-brand-600 p-2.5 rounded-xl shadow-md mr-3 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-//                                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-//                                         </svg>
-//                                     </div>
-//                                     Résultats par Parti
-//                                 </h3>
-//                                 <div className="px-3 py-1.5 bg-gradient-to-r from-brand-50 to-purple-50 border border-brand-200/50 rounded-lg">
-//                                     <span className="text-xs font-bold text-brand-700">Top 10</span>
-//                                 </div>
-//                             </div>
-
-//                             {/* Divider with gradient */}
-//                             <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-4"></div>
-
-//                             <ResultBarChart candidates={chartData.slice(0, 10)} />
-//                         </div>
-//                     </div>
