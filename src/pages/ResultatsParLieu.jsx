@@ -5,7 +5,7 @@ import { fetchResultatsLocalesCentres, getLieuxVoteByDepartement } from '../feat
 import Loader from '../components/Loader';
 import ResultatsLieuModal from '../components/ResultatsLieuModal';
 import ResultatsAggregatModal from '../components/ResultatsAggregatModal';
-import { ChevronLeftIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon, MapPinIcon, BuildingOfficeIcon, EyeIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon, MapPinIcon, BuildingOfficeIcon, EyeIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import useCustomWebSocket from '../hooks/useCustomWebSocket';
 
 const ResultatsParLieu = () => {
@@ -28,6 +28,7 @@ const ResultatsParLieu = () => {
 
     const [activeTab, setActiveTab] = useState('bv'); // 'bv', 'localite', 'centre'
     const [sortedData, setSortedData] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'nom_local', direction: 'ascending' });
 
     // Charger les lieux de vote (BV)
@@ -130,6 +131,20 @@ const ResultatsParLieu = () => {
         }
     }, [lieuxVoteByDepartement, activeTab]);
 
+    // Filtrage des données
+    const filteredBvData = sortedData.filter(item =>
+        item.nom_local.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.nom_lieu.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredLocalesData = resultats_locales.filter(item =>
+        item.resultats_generaux.nom_local.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredCentresData = resultats_centre.filter(item =>
+        item.resultats_generaux.nom_lieu.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const totalBureaux = sortedData.reduce((acc, item) => acc + item.nb_bureaux, 0);
     const totalBureauxComplets = sortedData.reduce((acc, item) => acc + item.nb_bureaux_complets, 0);
 
@@ -227,6 +242,34 @@ const ResultatsParLieu = () => {
                 </div>
             </div>
 
+            {/* Barre de Recherche */}
+            <div className="mb-6 flex">
+                <div className="relative group w-full max-w-md">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder={
+                            activeTab === 'bv' ? "Rechercher une localité ou un lieu de vote..." :
+                                activeTab === 'localite' ? "Rechercher une localité..." :
+                                    "Rechercher un centre de vote..."
+                        }
+                        className="block w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all shadow-sm group-hover:border-gray-300"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                        >
+                            <span className="text-xs font-black uppercase bg-gray-100 px-2 py-1 rounded-lg">Effacer</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
             {isLoading ? (
                 <div className="bg-white rounded-2xl shadow-xl p-12 flex flex-col items-center justify-center border border-gray-100">
                     <div className="relative">
@@ -255,7 +298,7 @@ const ResultatsParLieu = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                    {sortedData.map((item, index) => (
+                                    {filteredBvData.map((item, index) => (
                                         <tr key={`${item.id_lieu}-${index}`} className="hover:bg-brand-50/40 transition-all duration-200 group border-b border-gray-100 last:border-0">
                                             <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.nom_local}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700 font-bold">{item.nom_lieu}</td>
@@ -308,7 +351,7 @@ const ResultatsParLieu = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                    {resultats_locales.map((item, index) => (
+                                    {filteredLocalesData.map((item, index) => (
                                         <tr key={item.resultats_generaux.id_local || index} className="hover:bg-brand-50/40 transition-all duration-200 border-b border-gray-100 last:border-0 opacity-0 animate-fade-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' }}>
                                             <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.resultats_generaux.nom_local}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-black text-gray-800 tabular-nums">{item.resultats_generaux.pop_elect.toLocaleString()}</td>
@@ -362,7 +405,7 @@ const ResultatsParLieu = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
-                                    {resultats_centre.map((item, index) => (
+                                    {filteredCentresData.map((item, index) => (
                                         <tr key={item.resultats_generaux.id_lieu || index} className="hover:bg-brand-50/40 transition-all duration-200 border-b border-gray-100 last:border-0 opacity-0 animate-fade-in" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' }}>
                                             <td className="px-6 py-5 whitespace-nowrap text-sm font-black text-gray-900 tracking-tight">{item.resultats_generaux.nom_lieu}</td>
                                             <td className="px-6 py-5 whitespace-nowrap text-sm text-center font-black text-gray-800 tabular-nums">{item.resultats_generaux.nbre_votants.toLocaleString()}</td>
@@ -401,12 +444,36 @@ const ResultatsParLieu = () => {
                             </table>
                         )}
                     </div>
-                    {sortedData.length === 0 && activeTab === 'bv' && !loadingLieuxVote && (
+                    {filteredBvData.length === 0 && activeTab === 'bv' && !loadingLieuxVote && (
                         <div className="p-12 text-center">
                             <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100 mb-4">
                                 <BuildingOfficeIcon className="w-8 h-8 text-gray-300" />
                             </div>
-                            <p className="text-gray-500 font-bold">Aucun bureau de vote trouvé pour ce département.</p>
+                            <p className="text-gray-500 font-bold">
+                                {searchTerm ? "Aucun résultat ne correspond à votre recherche." : "Aucun bureau de vote trouvé pour ce département."}
+                            </p>
+                        </div>
+                    )}
+
+                    {filteredLocalesData.length === 0 && activeTab === 'localite' && !loadingLocalesCentres && (
+                        <div className="p-12 text-center">
+                            <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100 mb-4">
+                                <MapPinIcon className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <p className="text-gray-500 font-bold">
+                                {searchTerm ? "Aucun résultat ne correspond à votre recherche." : "Aucune localité trouvée."}
+                            </p>
+                        </div>
+                    )}
+
+                    {filteredCentresData.length === 0 && activeTab === 'centre' && !loadingLocalesCentres && (
+                        <div className="p-12 text-center">
+                            <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center border border-gray-100 mb-4">
+                                <ChartBarIcon className="w-8 h-8 text-gray-300" />
+                            </div>
+                            <p className="text-gray-500 font-bold">
+                                {searchTerm ? "Aucun résultat ne correspond à votre recherche." : "Aucun centre de vote trouvé."}
+                            </p>
                         </div>
                     )}
                 </div>
